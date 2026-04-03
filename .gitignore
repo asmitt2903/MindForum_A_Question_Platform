@@ -1,8 +1,7 @@
-# Node (frontend)
-frontend/node_modules/
-frontend/build/
-frontend/.env
+# Node (Frontend)
+Frontend/node_modules/
+Frontend/build/
+Frontend/.env
 
-# Common
-.DS_Store
-.vscode/
+Backend/node_modules/
+Frontend/node_modules/
