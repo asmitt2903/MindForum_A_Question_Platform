@@ -1,0 +1,103 @@
+body{
+margin:0;
+font-family:Arial;
+background:#f1f2f2;
+}
+
+/* navbar */
+
+.navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+background:#b92b27;
+color:white;
+padding:10px 40px;
+}
+
+.navbar input{
+width:40%;
+padding:8px;
+border-radius:5px;
+border:none;
+}
+
+.navbar button{
+background:white;
+color:#b92b27;
+border:none;
+padding:8px 15px;
+cursor:pointer;
+}
+
+
+/* main layout */
+
+.main{
+display:flex;
+margin-top:20px;
+}
+
+
+/* sidebar */
+
+.sidebar{
+width:20%;
+padding:20px;
+background:white;
+margin-left:20px;
+border-radius:10px;
+}
+
+.sidebar ul{
+list-style:none;
+padding:0;
+}
+
+.sidebar li{
+padding:8px 0;
+cursor:pointer;
+}
+
+
+/* feed */
+
+.feed{
+width:50%;
+margin:0 20px;
+}
+
+.ask-box{
+background:white;
+padding:15px;
+border-radius:10px;
+margin-bottom:20px;
+}
+
+.ask-box input{
+width:100%;
+padding:10px;
+}
+
+.post{
+background:white;
+padding:20px;
+border-radius:10px;
+margin-bottom:15px;
+}
+
+
+/* right panel */
+
+.right-panel{
+width:20%;
+background:white;
+padding:20px;
+border-radius:10px;
+margin-right:20px;
+}
+
+.right-panel ul{
+list-style:none;
+padding:0;
+}

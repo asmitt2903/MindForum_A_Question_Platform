@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindForum Home</title>
+<link rel="stylesheet" href="home.css">
+</head>
+
+<body>
+
+<div class="navbar">
+    <h2 class="logo">MindForum</h2>
+
+    <input type="text" placeholder="Search questions...">
+
+    <button onclick="logout()">Logout</button>
+</div>
+
+
+<!-- Main Layout -->
+<div class="main">
+
+    <!-- Left Sidebar -->
+    <div class="sidebar">
+        <h3>Spaces</h3>
+        <ul>
+            <li>Technology</li>
+            <li>Programming</li>
+            <li>Science</li>
+            <li>Startups</li>
+            <li>Education</li>
+        </ul>
+    </div>
+
+
+    <!-- Feed -->
+    <div class="feed">
+
+        <div class="ask-box">
+            <input type="text" placeholder="What do you want to ask or share?">
+        </div>
+
+        <div class="post">
+            <h4>What is Node.js?</h4>
+            <p>Node.js is a JavaScript runtime built on Chrome's V8 engine.</p>
+        </div>
+
+        <div class="post">
+            <h4>Why is MongoDB popular?</h4>
+            <p>MongoDB is flexible and uses document based storage.</p>
+        </div>
+
+    </div>
+
+
+    <!-- Right Panel -->
+    <div class="right-panel">
+        <h3>Suggested Topics</h3>
+        <ul>
+            <li>Artificial Intelligence</li>
+            <li>Web Development</li>
+            <li>Data Science</li>
+            <li>Startups</li>
+        </ul>
+    </div>
+
+</div>
+
+<script src="home.js"></script>
+
+</body>
+</html>
