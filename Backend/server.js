@@ -72,7 +72,7 @@ app.post("/signup", async (req, res) => {
         res.send("Signup Successful");
     } catch (error) {
         console.error("Signup error:", error);
-        res.status(500).send("Registration failed");
+        res.status(500).send("Registration failed: " + error.message);
     }
 });
 
