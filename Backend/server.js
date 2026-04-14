@@ -5,8 +5,6 @@ import jwt from "jsonwebtoken"
 import cookieParser from "cookie-parser"
 import User from "./models/userModel.js"
 import { fileURLToPath } from "url"
-import dotenv from "dotenv"
-dotenv.config()
 
 const app = express()
 
@@ -127,7 +125,6 @@ app.get("/logout", (req, res) => {
     res.redirect("/login");
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT,()=>{
+app.listen(3000,()=>{
     console.log("Server running on port 3000")
 })
