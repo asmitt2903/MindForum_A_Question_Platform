@@ -2,7 +2,7 @@ const form = document.getElementById("signupForm");
 
 const BASE_URL = window.location.hostname.includes("localhost")
   ? "http://localhost:3000"
-  : "https://your-backend-name.onrender.com"; // replace this
+  : "https://mindforum-a-question-platform.onrender.com"; 
 
 form.addEventListener("submit", async function (e) {
   e.preventDefault();
