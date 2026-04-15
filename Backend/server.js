@@ -4,6 +4,8 @@ import path from "path"
 import jwt from "jsonwebtoken"
 import cookieParser from "cookie-parser"
 import User from "./models/userModel.js"
+import Question from "./models/questionModel.js"
+import Answer from "./models/answerModel.js"
 import { fileURLToPath } from "url"
 import multer from "multer"
 import fs from "fs"
@@ -172,6 +174,189 @@ app.post("/api/user/upload-profile-pic", auth, upload.single("profilePic"), asyn
     } catch (error) {
         console.error("Upload error:", error);
         res.status(500).json({ message: "Upload failed" });
+    }
+});
+
+app.patch("/api/user/profile", auth, async (req, res) => {
+    try {
+        const { bio, interests, title } = req.body;
+        
+        // Convert comma-separated string to array if necessary
+        const interestsArray = Array.isArray(interests) 
+            ? interests 
+            : (interests ? interests.split(",").map(i => i.trim()) : []);
+
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user.id,
+            { bio, interests: interestsArray, title },
+            { new: true }
+        ).select("-password");
+
+        res.json(updatedUser);
+    } catch (error) {
+        console.error("Profile update error:", error);
+        res.status(500).json({ message: "Update failed" });
+    }
+});
+
+// GET Public Profile
+app.get("/api/user/public/:id", auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id)
+            .select("-password -email")
+            .populate("followers", "name profilePic")
+            .populate("following", "name profilePic");
+            
+        if (!user) return res.status(404).json({ message: "User not found" });
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching profile" });
+    }
+});
+
+// Follow/Unfollow Toggle
+app.post("/api/user/follow/:id", auth, async (req, res) => {
+    try {
+        const userToFollow = await User.findById(req.params.id);
+        const currentUser = await User.findById(req.user.id);
+
+        if (!userToFollow) return res.status(404).json({ message: "User not found" });
+        if (req.params.id === req.user.id) return res.status(400).json({ message: "You cannot follow yourself" });
+
+        const isFollowing = currentUser.following.includes(req.params.id);
+
+        if (isFollowing) {
+            // Unfollow
+            currentUser.following = currentUser.following.filter(id => id.toString() !== req.params.id);
+            userToFollow.followers = userToFollow.followers.filter(id => id.toString() !== req.user.id);
+        } else {
+            // Follow
+            currentUser.following.push(req.params.id);
+            userToFollow.followers.push(req.user.id);
+        }
+
+        await currentUser.save();
+        await userToFollow.save();
+
+        res.json({ isFollowing: !isFollowing, followersCount: userToFollow.followers.length });
+    } catch (error) {
+        res.status(500).json({ message: "Follow action failed" });
+    }
+});
+
+// User Stats (Questions & Answers count + Reach)
+app.get("/api/user/stats/:id", auth, async (req, res) => {
+    try {
+        const qCount = await Question.countDocuments({ user: req.params.id });
+        const aCount = await Answer.countDocuments({ user: req.params.id });
+        
+        // Sum of all views for user's questions
+        const questions = await Question.find({ user: req.params.id });
+        const totalReach = questions.reduce((acc, q) => acc + (q.views || 0), 0);
+
+        res.json({ questions: qCount, answers: aCount, totalReach });
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching stats" });
+    }
+});
+
+// --- Question API ---
+
+app.post("/api/questions", auth, upload.single("media"), async (req, res) => {
+    try {
+        const { content, spaces } = req.body;
+        let mediaUrl = "";
+        let mediaType = "text";
+
+        if (req.file) {
+            mediaUrl = `/uploads/${req.file.filename}`;
+            const ext = path.extname(req.file.originalname).toLowerCase();
+            if ([".jpg", ".jpeg", ".png", ".gif", ".webp"].includes(ext)) {
+                mediaType = "image";
+            } else if ([".mp4", ".mov", ".avi", ".mkv"].includes(ext)) {
+                mediaType = "video";
+            }
+        }
+
+        const newQuestion = new Question({
+            user: req.user.id,
+            content,
+            mediaUrl,
+            mediaType,
+            spaces: spaces || "General"
+        });
+
+        await newQuestion.save();
+        res.status(201).json(newQuestion);
+    } catch (error) {
+        console.error("Question error:", error);
+        res.status(500).json({ message: "Failed to post question" });
+    }
+});
+
+app.get("/api/questions", auth, async (req, res) => {
+    try {
+        const questions = await Question.find()
+            .populate("user", "name profilePic")
+            .sort({ createdAt: -1 });
+
+        // Increment views for each question (informal tracking)
+        // We'll increment only if the current user is not the author
+        const questionIds = questions.map(q => q._id);
+        await Question.updateMany(
+            { _id: { $in: questionIds }, user: { $ne: req.user.id } },
+            { $inc: { views: 1 } }
+        );
+
+        res.json(questions);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching questions" });
+    }
+});
+
+// --- Answer API ---
+
+app.post("/api/questions/:id/answers", auth, upload.single("media"), async (req, res) => {
+    try {
+        const { content } = req.body;
+        const questionId = req.params.id;
+        let mediaUrl = "";
+        let mediaType = "text";
+
+        if (req.file) {
+            mediaUrl = `/uploads/${req.file.filename}`;
+            const ext = path.extname(req.file.originalname).toLowerCase();
+            if ([".jpg", ".jpeg", ".png", ".gif", ".webp"].includes(ext)) {
+                mediaType = "image";
+            } else if ([".mp4", ".mov", ".avi", ".mkv"].includes(ext)) {
+                mediaType = "video";
+            }
+        }
+
+        const newAnswer = new Answer({
+            user: req.user.id,
+            question: questionId,
+            content,
+            mediaUrl,
+            mediaType
+        });
+
+        await newAnswer.save();
+        res.status(201).json(newAnswer);
+    } catch (error) {
+        console.error("Answer error:", error);
+        res.status(500).json({ message: "Failed to post answer" });
+    }
+});
+
+app.get("/api/questions/:id/answers", auth, async (req, res) => {
+    try {
+        const answers = await Answer.find({ question: req.params.id })
+            .populate("user", "name profilePic")
+            .sort({ createdAt: 1 });
+        res.json(answers);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching answers" });
     }
 });
 

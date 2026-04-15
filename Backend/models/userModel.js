@@ -21,7 +21,38 @@ const userSchema = new mongoose.Schema({
     profilePic: {
         type: String,
         default: "/uploads/default-avatar.png"
-    }
+    },
+    bio: {
+        type: String,
+        default: "",
+        trim: true
+    },
+    interests: [{
+        type: String,
+        trim: true
+    }],
+    title: {
+        type: String,
+        default: "Explorer",
+        trim: true
+    },
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    followers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    }],
+    following: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    }],
+    credentials: [{
+        title: String,
+        subtitle: String,
+        icon: String // e.g., 'fas fa-graduation-cap'
+    }]
 }, { timestamps: true });
 
 // Hash password before saving
