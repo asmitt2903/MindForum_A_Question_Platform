@@ -6,6 +6,9 @@ import cookieParser from "cookie-parser"
 import User from "./models/userModel.js"
 import { fileURLToPath } from "url"
 
+import dotenv from "dotenv"
+dotenv.config()
+
 const app = express()
 
 const __filename = fileURLToPath(import.meta.url)
