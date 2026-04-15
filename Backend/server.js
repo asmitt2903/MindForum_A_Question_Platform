@@ -111,8 +111,9 @@ app.post("/login", async (req, res) => {
         // Send token in cookie
         res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            maxAge: 3600000 // 1 hour
+            secure: true,
+            sameSite: "none",
+            maxAge: 3600000
         });
 
         res.send("Login Successful");
