@@ -149,13 +149,6 @@ app.get("/logout", (req, res) => {
     res.redirect("/login");
 });
 
-<<<<<<< HEAD
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
-=======
 // User API Routes
 app.get("/api/user/me", auth, async (req, res) => {
     try {
@@ -182,7 +175,9 @@ app.post("/api/user/upload-profile-pic", auth, upload.single("profilePic"), asyn
     }
 });
 
-app.listen(3000,()=>{
-    console.log("Server running on port 3000")
-})
->>>>>>> 1053a75 (Updated Login/Signup Page UI)
+// ✅ Correct for Render
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
