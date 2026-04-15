@@ -1,128 +1,166 @@
-body{
-margin:0;
-font-family: Arial, Helvetica, sans-serif;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-background-image:url("https://png.pngtree.com/thumb_back/fh260/background/20251026/pngtree-abstract-blue-and-orange-fluid-wave-background-design-image_20051757.webp");
-background-size:cover;
-background-position:center;
-
-height:100vh;
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #f5eef6 0%, #edf1f7 50%, #f7f1f4 100%);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    color: #1a1a1a;
 }
 
-/* container */
-.container{
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-background:rgba(0,0,0,0.4);
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 440px;
+    padding: 20px;
+    margin-bottom: 60px; /* Space for bottom section */
 }
 
-/* signup box with animation */
-.signup-box{
-background:rgba(255,255,255,0.95);
-backdrop-filter: blur(10px);
-padding:40px;
-width:380px;
-border-radius:12px;
-box-shadow:0 15px 35px rgba(0,0,0,0.35);
-animation:fadeIn 1s ease;
-transition:0.3s;
+.header {
+    text-align: center;
+    margin-bottom: 30px;
 }
 
-.signup-box:hover{
-transform:translateY(-5px);
+.logo {
+    color: #b92b27;
+    font-size: 36px;
+    font-weight: 700;
+    margin: 0;
 }
 
-/* logo animation */
-.logo{
-text-align:center;
-color:#b92b27;
-font-size:40px;
-margin-bottom:10px;
-transition:0.3s;
+.tagline {
+    color: #4a4a4a;
+    font-size: 16px;
+    margin-top: 10px;
+    font-weight: 400;
 }
 
-.logo:hover{
-transform:scale(1.1);
+.signup-box {
+    background: white;
+    padding: 32px;
+    width: 100%;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+    box-sizing: border-box;
 }
 
-/* tagline */
-.tagline{
-text-align:center;
-color:gray;
-font-size:14px;
-margin-bottom:25px;
+.signup-box h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0 0 24px 0;
+    color: #1a1a1a;
 }
 
-/* inputs */
-input{
-width:100%;
-padding:10px;
-margin-top:5px;
-margin-bottom:15px;
-border:1px solid #ccc;
-border-radius:5px;
-outline:none;
-transition:0.3s;
+.form-group {
+    margin-bottom: 16px;
 }
 
-/* input focus effect */
-input:focus{
-border-color:#b92b27;
-box-shadow:0 0 8px rgba(185,43,39,0.4);
-transform:scale(1.02);
+.label-container {
+    margin-bottom: 8px;
 }
 
-/* button */
-button{
-width:100%;
-padding:12px;
-background:#b92b27;
-color:white;
-border:none;
-border-radius:6px;
-cursor:pointer;
-font-size:16px;
-transition:0.3s;
+label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #8a8a8a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-/* button hover effect */
-button:hover{
-background:#a3221e;
-transform:translateY(-2px);
-box-shadow:0 5px 15px rgba(0,0,0,0.3);
+input {
+    width: 100%;
+    padding: 12px 16px;
+    background: #e5e7eb;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #1a1a1a;
+    box-sizing: border-box;
+    transition: background 0.2s;
 }
 
-/* button click effect */
-button:active{
-transform:scale(0.96);
+input::placeholder {
+    color: #9ca3af;
 }
 
-/* login link */
-.login-link{
-text-align:center;
-margin-top:15px;
+input:focus {
+    outline: none;
+    background: #d1d5db;
 }
 
-.login-link a{
-color:#b92b27;
-text-decoration:none;
-font-weight:bold;
+button {
+    width: 100%;
+    padding: 14px;
+    background: #b92b27;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 12px;
+    box-shadow: 0 4px 15px rgba(185, 43, 39, 0.2);
+    transition: transform 0.2s, background 0.2s;
 }
 
-.login-link a:hover{
-text-decoration:underline;
+button:hover {
+    background: #a32420;
+    transform: translateY(-1px);
 }
 
-/* animation */
-@keyframes fadeIn{
-from{
-opacity:0;
-transform:translateY(20px);
+.footer {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 14px;
+    color: #4a4a4a;
 }
-to{
-opacity:1;
-transform:translateY(0);
+
+.footer a {
+    color: #b92b27;
+    text-decoration: none;
+    font-weight: 600;
 }
+
+.bottom-section {
+    position: fixed;
+    bottom: 20px;
+    width: 100%;
+    text-align: center;
+}
+
+.topics {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 16px;
+    color: #8a8a8a;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.topic-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legal-links {
+    color: #a3a3a3;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.legal-links span {
+    margin: 0 8px;
 }

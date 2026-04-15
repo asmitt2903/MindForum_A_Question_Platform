@@ -16,7 +16,6 @@ form.addEventListener("submit", async function (e) {
     alert("Passwords do not match");
     return;
   }
-
   try {
     const response = await fetch(`${BASE_URL}/signup`, {
       method: "POST",

@@ -5,6 +5,8 @@ import jwt from "jsonwebtoken"
 import cookieParser from "cookie-parser"
 import User from "./models/userModel.js"
 import { fileURLToPath } from "url"
+import multer from "multer"
+import fs from "fs"
 
 import dotenv from "dotenv"
 dotenv.config()
@@ -24,6 +26,24 @@ dbConnect()
 
 
 app.use(express.static(frontendPath))
+
+// Create uploads directory if it doesn't exist
+const uploadsPath = path.join(__dirname, "uploads")
+if (!fs.existsSync(uploadsPath)) {
+    fs.mkdirSync(uploadsPath)
+}
+app.use("/uploads", express.static(uploadsPath))
+
+// Multer Config
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadsPath)
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname))
+    }
+})
+const upload = multer({ storage })
 
 
 async function auth(req, res, next) {
@@ -129,8 +149,40 @@ app.get("/logout", (req, res) => {
     res.redirect("/login");
 });
 
+<<<<<<< HEAD
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+=======
+// User API Routes
+app.get("/api/user/me", auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select("-password");
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching user" });
+    }
+});
+
+app.post("/api/user/upload-profile-pic", auth, upload.single("profilePic"), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        const profilePicUrl = `/uploads/${req.file.filename}`;
+        await User.findByIdAndUpdate(req.user.id, { profilePic: profilePicUrl });
+
+        res.json({ message: "Upload successful", profilePic: profilePicUrl });
+    } catch (error) {
+        console.error("Upload error:", error);
+        res.status(500).json({ message: "Upload failed" });
+    }
+});
+
+app.listen(3000,()=>{
+    console.log("Server running on port 3000")
+})
+>>>>>>> 1053a75 (Updated Login/Signup Page UI)

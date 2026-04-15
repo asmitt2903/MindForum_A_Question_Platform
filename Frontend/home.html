@@ -14,7 +14,13 @@
 
     <input type="text" placeholder="Search questions...">
 
-    <button onclick="logout()">Logout</button>
+    <div class="user-profile">
+        <div class="profile-pic-container" onclick="document.getElementById('profileInput').click()">
+            <img id="profileDisplay" src="/uploads/default-avatar.png" alt="Profile">
+        </div>
+        <input type="file" id="profileInput" accept="image/*" style="display: none;" onchange="uploadPhoto(event)">
+        <button onclick="logout()">Logout</button>
+    </div>
 </div>
 
 
