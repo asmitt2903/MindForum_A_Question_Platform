@@ -9,9 +9,17 @@ import Answer from "./models/answerModel.js"
 import { fileURLToPath } from "url"
 import multer from "multer"
 import fs from "fs"
+import { v2 as cloudinary } from "cloudinary"
+import { CloudinaryStorage } from "multer-storage-cloudinary"
 
 import dotenv from "dotenv"
 dotenv.config()
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 const app = express()
 
@@ -36,14 +44,13 @@ if (!fs.existsSync(uploadsPath)) {
 }
 app.use("/uploads", express.static(uploadsPath))
 
-// Multer Config
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadsPath)
+// --- Multer & Cloudinary Config ---
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: "mindforum_media",
+        resource_type: "auto", // Important: Allows both images and videos
     },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname))
-    }
 })
 const upload = multer({ storage })
 
@@ -187,7 +194,7 @@ app.post("/api/user/upload-profile-pic", auth, upload.single("profilePic"), asyn
             return res.status(400).json({ message: "No file uploaded" });
         }
 
-        const profilePicUrl = `/uploads/${req.file.filename}`;
+        const profilePicUrl = req.file.path;
         await User.findByIdAndUpdate(req.user.id, { profilePic: profilePicUrl });
 
         res.json({ message: "Upload successful", profilePic: profilePicUrl });
@@ -289,7 +296,7 @@ app.post("/api/questions", auth, upload.single("media"), async (req, res) => {
         let mediaType = "text";
 
         if (req.file) {
-            mediaUrl = `/uploads/${req.file.filename}`;
+            mediaUrl = req.file.path;
             const ext = path.extname(req.file.originalname).toLowerCase();
             if ([".jpg", ".jpeg", ".png", ".gif", ".webp"].includes(ext)) {
                 mediaType = "image";
@@ -335,6 +342,44 @@ app.get("/api/questions", auth, async (req, res) => {
     }
 });
 
+app.post("/api/questions/:id/like", auth, async (req, res) => {
+    try {
+        const question = await Question.findById(req.params.id);
+        if (!question) return res.status(404).json({ message: "Question not found" });
+        const userId = req.user.id;
+
+        if (question.upvotes.includes(userId)) {
+            question.upvotes = question.upvotes.filter(id => id.toString() !== userId);
+        } else {
+            question.upvotes.push(userId);
+            question.downvotes = question.downvotes.filter(id => id.toString() !== userId);
+        }
+        await question.save();
+        res.json(question);
+    } catch (error) {
+        res.status(500).json({ message: "Like action failed" });
+    }
+});
+
+app.post("/api/questions/:id/dislike", auth, async (req, res) => {
+    try {
+        const question = await Question.findById(req.params.id);
+        if (!question) return res.status(404).json({ message: "Question not found" });
+        const userId = req.user.id;
+
+        if (question.downvotes.includes(userId)) {
+            question.downvotes = question.downvotes.filter(id => id.toString() !== userId);
+        } else {
+            question.downvotes.push(userId);
+            question.upvotes = question.upvotes.filter(id => id.toString() !== userId);
+        }
+        await question.save();
+        res.json(question);
+    } catch (error) {
+        res.status(500).json({ message: "Dislike action failed" });
+    }
+});
+
 // --- Answer API ---
 
 app.post("/api/questions/:id/answers", auth, upload.single("media"), async (req, res) => {
@@ -345,7 +390,7 @@ app.post("/api/questions/:id/answers", auth, upload.single("media"), async (req,
         let mediaType = "text";
 
         if (req.file) {
-            mediaUrl = `/uploads/${req.file.filename}`;
+            mediaUrl = req.file.path;
             const ext = path.extname(req.file.originalname).toLowerCase();
             if ([".jpg", ".jpeg", ".png", ".gif", ".webp"].includes(ext)) {
                 mediaType = "image";
