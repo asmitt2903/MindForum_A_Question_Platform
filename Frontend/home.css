@@ -623,6 +623,7 @@ body {
     height: 100%;
     background: rgba(0,0,0,0.6);
     backdrop-filter: blur(4px);
+    overflow-y: auto; /* Fix modal clipping on small screens */
 }
 
 .modal-content {
@@ -650,6 +651,8 @@ body {
 
 .modal-body {
     padding: 20px;
+    max-height: 65vh;
+    overflow-y: auto; /* Allow scrolling if image is too tall */
 }
 
 .modal-body textarea {
@@ -723,6 +726,12 @@ body {
     border-radius: 24px;
     font-weight: 700;
     cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-post:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .hidden {

@@ -160,7 +160,7 @@ function resetAskModal() {
     removeMedia();
 }
 
-async function submitQuestion() {
+async function submitQuestion(btnElement) {
     const content = document.getElementById("questionContent").value;
     const mediaInput = document.getElementById("mediaInput");
     
@@ -168,6 +168,11 @@ async function submitQuestion() {
         alert("Please enter some content or select media.");
         return;
     }
+
+    // Disable button and show loading state
+    const originalText = btnElement.innerText;
+    btnElement.disabled = true;
+    btnElement.innerText = "Uploading...";
 
     const formData = new FormData();
     formData.append("content", content);
@@ -198,6 +203,9 @@ async function submitQuestion() {
         }
     } catch (error) {
         console.error("Posting error:", error);
+    } finally {
+        btnElement.disabled = false;
+        btnElement.innerText = originalText;
     }
 }
 
@@ -375,7 +383,7 @@ function resetAnswerModal() {
     removeAnswerMedia();
 }
 
-async function submitAnswer() {
+async function submitAnswer(btnElement) {
     const content = document.getElementById("answerContent").value;
     const mediaInput = document.getElementById("answerMediaInput");
 
@@ -383,6 +391,11 @@ async function submitAnswer() {
         alert("Please enter an answer.");
         return;
     }
+
+    // Disable button and show loading state
+    const originalText = btnElement.innerText;
+    btnElement.disabled = true;
+    btnElement.innerText = "Uploading...";
 
     const formData = new FormData();
     formData.append("content", content);
@@ -404,6 +417,9 @@ async function submitAnswer() {
         }
     } catch (error) {
         console.error("Answering error:", error);
+    } finally {
+        btnElement.disabled = false;
+        btnElement.innerText = originalText;
     }
 }
 
@@ -456,6 +472,14 @@ async function uploadPhoto(event) {
     const formData = new FormData();
     formData.append("profilePic", file);
 
+    // Provide visual feedback
+    const uploadTextSpan = document.querySelector('div[onclick="triggerProfileUpload()"] span');
+    let originalText = "Upload Profile";
+    if (uploadTextSpan) {
+        originalText = uploadTextSpan.innerText;
+        uploadTextSpan.innerText = "Uploading...";
+    }
+
     try {
         const response = await fetch("/api/user/upload-profile-pic", {
             method: "POST",
@@ -468,12 +492,19 @@ async function uploadPhoto(event) {
             
             // Refresh avatars
             document.getElementById("profileTrigger").innerHTML = renderAvatarHtml(currentUser);
-            document.getElementById("miniProfileContainer").innerHTML = renderAvatarHtml(currentUser, "mini");
+            const mini = document.getElementById("miniProfileContainer");
+            if (mini) mini.innerHTML = renderAvatarHtml(currentUser, "mini");
             
             alert("Profile picture updated!");
+        } else {
+            alert("Profile upload failed.");
         }
     } catch (error) {
         console.error("Upload error:", error);
+    } finally {
+        if (uploadTextSpan) {
+            uploadTextSpan.innerText = originalText;
+        }
     }
 }
 
