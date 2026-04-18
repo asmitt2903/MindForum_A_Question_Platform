@@ -5,8 +5,9 @@ window.onload = async () => {
     initTheme();
     await fetchUserData();
     
-    // Only load feed if on home.html
-    if (window.location.pathname.includes("home.html") || window.location.pathname === "/") {
+    // Only load feed if on home.html or /home route
+    const path = window.location.pathname;
+    if (path.includes("home.html") || path === "/" || path === "/home") {
         await loadQuestions();
     }
 };

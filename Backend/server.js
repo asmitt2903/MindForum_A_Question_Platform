@@ -105,6 +105,26 @@ app.get("/home",auth,(req,res)=>{
     res.sendFile(path.join(frontendPath,"home.html"))
 })
 
+app.get("/philosophy",auth,(req,res)=>{
+    res.sendFile(path.join(frontendPath,"philosophy.html"))
+})
+
+app.get("/psychology",auth,(req,res)=>{
+    res.sendFile(path.join(frontendPath,"psychology.html"))
+})
+
+app.get("/technology",auth,(req,res)=>{
+    res.sendFile(path.join(frontendPath,"technology.html"))
+})
+
+app.get("/science",auth,(req,res)=>{
+    res.sendFile(path.join(frontendPath,"science.html"))
+})
+
+app.get("/business",auth,(req,res)=>{
+    res.sendFile(path.join(frontendPath,"business.html"))
+})
+
 
 
 app.post("/login", async (req, res) => {
@@ -296,7 +316,8 @@ app.post("/api/questions", auth, upload.single("media"), async (req, res) => {
 
 app.get("/api/questions", auth, async (req, res) => {
     try {
-        const questions = await Question.find()
+        const spaceFilter = req.query.space ? { spaces: req.query.space } : {};
+        const questions = await Question.find(spaceFilter)
             .populate("user", "name profilePic")
             .sort({ createdAt: -1 });
 

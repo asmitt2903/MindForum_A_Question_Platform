@@ -24,6 +24,10 @@ const questionSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
     }],
+    downvotes: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    }],
     spaces: {
         type: String,
         default: "General"
