@@ -5,9 +5,10 @@ window.onload = async () => {
     initTheme();
     await fetchUserData();
     
-    // Only load feed if on home.html or /home route
+    // Load feed if on an active space route
     const path = window.location.pathname;
-    if (path.includes("home.html") || path === "/" || path === "/home") {
+    const feedRoutes = ["home.html", "/", "/home", "/philosophy", "/psychology", "/technology", "/science", "/business"];
+    if (feedRoutes.some(route => path.includes(route) || path === route)) {
         await loadQuestions();
     }
 };
@@ -174,6 +175,15 @@ async function submitQuestion() {
         formData.append("media", mediaInput.files[0]);
     }
 
+    // Auto-assign space based on route
+    const path = window.location.pathname;
+    if (path.includes("philosophy")) formData.append("spaces", "Philosophy");
+    else if (path.includes("psychology")) formData.append("spaces", "Psychology");
+    else if (path.includes("technology")) formData.append("spaces", "Technology");
+    else if (path.includes("science")) formData.append("spaces", "Science");
+    else if (path.includes("business")) formData.append("spaces", "Business");
+    else formData.append("spaces", "General");
+
     try {
         const response = await fetch("/api/questions", {
             method: "POST",
@@ -196,7 +206,16 @@ async function submitQuestion() {
 async function loadQuestions() {
     const feed = document.getElementById("feedContent");
     try {
-        const response = await fetch("/api/questions");
+        // Fetch questions depending on space
+        const path = window.location.pathname;
+        let url = "/api/questions";
+        if (path.includes("philosophy")) url += "?space=Philosophy";
+        else if (path.includes("psychology")) url += "?space=Psychology";
+        else if (path.includes("technology")) url += "?space=Technology";
+        else if (path.includes("science")) url += "?space=Science";
+        else if (path.includes("business")) url += "?space=Business";
+
+        const response = await fetch(url);
         const questions = await response.json();
 
         if (questions.length === 0) {
@@ -224,9 +243,16 @@ function createQuestionCard(q) {
     
     const mediaHtml = q.mediaUrl ? `
         <div class="media-container">
-            ${q.mediaType === 'image' ? `<img src="${q.mediaUrl}">` : `<video src="${q.mediaUrl}" controls></video>`}
+            ${q.mediaType === 'image' ? `<img src="${q.mediaUrl}" onerror="this.parentElement.style.display='none'">` : `<video src="${q.mediaUrl}" controls onerror="this.parentElement.style.display='none'"></video>`}
         </div>
     ` : "";
+
+    const hasLiked = currentUser && q.upvotes && q.upvotes.includes(currentUser._id);
+    const hasDisliked = currentUser && q.downvotes && q.downvotes.includes(currentUser._id);
+
+    // Escape content to safely pass to functions
+    const safeContentForShare = encodeURIComponent(q.content);
+    const safeContentForAnswer = q.content.substring(0, 30).replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
     card.innerHTML = `
         <div class="card-header">
@@ -245,15 +271,21 @@ function createQuestionCard(q) {
         <div class="card-stats">
             <div class="stat-left">
                 <div class="btn-upvote-group">
-                    <button class="btn-vote"><i class="fas fa-arrow-up"></i> Upvote • ${q.upvotes?.length || 0}</button>
-                    <button class="btn-vote"><i class="fas fa-arrow-down"></i></button>
+                    <button class="btn-vote" onclick="toggleLike('${q._id}')" style="${hasLiked ? 'color: var(--primary-color)' : ''}">
+                         <i class="${hasLiked ? 'fas' : 'far'} fa-thumbs-up"></i> Like • ${q.upvotes?.length || 0}
+                    </button>
+                    <button class="btn-vote" onclick="toggleDislike('${q._id}')" style="${hasDisliked ? 'color: #ff5252' : ''}">
+                         <i class="${hasDisliked ? 'fas' : 'far'} fa-thumbs-down"></i> Dislike • ${q.downvotes?.length || 0}
+                    </button>
                 </div>
             </div>
             <div class="stat-right">
-                <div class="stat-item" onclick="openAnswerModal('${q._id}', '${q.content.substring(0, 30)}...')">
+                <div class="stat-item" onclick="openAnswerModal('${q._id}', '${safeContentForAnswer}...')">
                     <i class="far fa-comment"></i> Answer
                 </div>
-                <div class="stat-item"><i class="fas fa-share"></i> Share</div>
+                <div class="stat-item" onclick="shareQuestion(decodeURIComponent('${safeContentForShare}'))">
+                    <i class="fas fa-share"></i> Share
+                </div>
             </div>
         </div>
         <div class="answers-section" id="answers-${q._id}">
@@ -261,6 +293,39 @@ function createQuestionCard(q) {
         </div>
     `;
     return card;
+}
+
+// Global functions for Like / Dislike / Share
+async function toggleLike(questionId) {
+    if (!currentUser) return alert("Please log in to like a question.");
+    try {
+        const response = await fetch(`/api/questions/${questionId}/like`, { method: "POST" });
+        if (response.ok) loadQuestions();
+    } catch (e) {
+        console.error("Error liking:", e);
+    }
+}
+
+async function toggleDislike(questionId) {
+    if (!currentUser) return alert("Please log in to dislike a question.");
+    try {
+        const response = await fetch(`/api/questions/${questionId}/dislike`, { method: "POST" });
+        if (response.ok) loadQuestions();
+    } catch (e) {
+        console.error("Error disliking:", e);
+    }
+}
+
+function shareQuestion(content) {
+    if (navigator.share) {
+        navigator.share({
+            title: 'MindForum Question',
+            text: content,
+            url: window.location.href
+        }).catch(console.error);
+    } else {
+        alert("Share feature is not supported in this browser. Try copying the URL.");
+    }
 }
 
 // --- Answer Flow ---
@@ -359,7 +424,7 @@ async function loadAnswers(questionId) {
             div.className = "answer-card";
             const mediaHtml = a.mediaUrl ? `
                 <div class="media-container" style="margin-top: 8px;">
-                     ${a.mediaType === 'image' ? `<img src="${a.mediaUrl}" style="max-height: 200px;">` : `<video src="${a.mediaUrl}" controls style="max-height: 200px;"></video>`}
+                     ${a.mediaType === 'image' ? `<img src="${a.mediaUrl}" style="max-height: 200px;" onerror="this.parentElement.style.display='none'">` : `<video src="${a.mediaUrl}" controls style="max-height: 200px;" onerror="this.parentElement.style.display='none'"></video>`}
                 </div>
             ` : "";
 
