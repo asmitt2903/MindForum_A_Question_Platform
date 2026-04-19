@@ -569,3 +569,72 @@ async function updateProfile() {
         console.error("Update error:", error);
     }
 }
+
+// --- Notification Polling & Desktop Alerts ---
+
+async function checkNotifications() {
+    try {
+        const response = await fetch('/api/notifications');
+        if (!response.ok) return;
+        const notifications = await response.json();
+        
+        const unread = notifications.filter(n => !n.isRead);
+        const notifDot = document.getElementById('notifDot');
+        
+        if (unread.length > 0) {
+            if (notifDot) notifDot.classList.remove('hidden');
+            
+            // Handle browser notifications for unseen items
+            const forBrowser = unread.filter(n => !n.isBrowserNotified);
+            if (forBrowser.length > 0) {
+                for (const notif of forBrowser) {
+                    showBrowserNotification(notif);
+                }
+                
+                // Mark as browser-notified
+                await fetch('/api/notifications/browser-notified', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids: forBrowser.map(n => n._id) })
+                });
+            }
+        } else {
+            if (notifDot) notifDot.classList.add('hidden');
+        }
+    } catch (err) {
+        console.error('Error checking notifications:', err);
+    }
+}
+
+function showBrowserNotification(notif) {
+    if (!("Notification" in window)) return;
+    
+    if (Notification.permission === "granted") {
+        const options = {
+            body: notif.message,
+            icon: notif.sender.profilePic || "/uploads/default-avatar.png",
+            badge: "/favicon.ico"
+        };
+        
+        const n = new Notification("MindForum", options);
+        n.onclick = () => {
+            window.focus();
+            window.location.href = 'notifications.html';
+        };
+    } else if (Notification.permission !== "denied") {
+        Notification.requestPermission();
+    }
+}
+
+// Start polling
+if (typeof auth !== 'undefined' || document.cookie.includes('token')) {
+    setInterval(checkNotifications, 30000); // Every 30 seconds
+    checkNotifications(); // Initial check
+}
+
+// Request permission on first interaction
+document.addEventListener('click', () => {
+    if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+    }
+}, { once: true });

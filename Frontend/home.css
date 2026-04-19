@@ -116,6 +116,44 @@ body {
     gap: 16px;
 }
 
+.notification-wrapper {
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 50%;
+    transition: var(--transition);
+}
+
+.notification-wrapper:hover {
+    background: #f1f2f2;
+}
+
+.notif-icon {
+    font-size: 20px;
+    color: var(--text-secondary);
+}
+
+.notification-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 10px;
+    height: 10px;
+    background: var(--primary-color);
+    border: 2px solid var(--card-bg);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(185, 43, 39, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(185, 43, 39, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(185, 43, 39, 0); }
+}
+
 .btn-ask {
     background: var(--primary-color);
     color: white;

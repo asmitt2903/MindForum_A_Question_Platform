@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser"
 import User from "./models/userModel.js"
 import Question from "./models/questionModel.js"
 import Answer from "./models/answerModel.js"
+import Notification from "./models/notificationModel.js"
 import { fileURLToPath } from "url"
 import multer from "multer"
 import fs from "fs"
@@ -280,6 +281,17 @@ app.post("/api/user/follow/:id", auth, async (req, res) => {
         await currentUser.save();
         await userToFollow.save();
 
+        // Create Notification (only if following)
+        if (!isFollowing) {
+            const notification = new Notification({
+                recipient: req.params.id,
+                sender: req.user.id,
+                type: "follow",
+                message: `${currentUser.name} followed you.`
+            });
+            await notification.save();
+        }
+
         res.json({ isFollowing: !isFollowing, followersCount: userToFollow.followers.length });
     } catch (error) {
         res.status(500).json({ message: "Follow action failed" });
@@ -299,6 +311,53 @@ app.get("/api/user/stats/:id", auth, async (req, res) => {
         res.json({ questions: qCount, answers: aCount, totalReach });
     } catch (error) {
         res.status(500).json({ message: "Error fetching stats" });
+    }
+});
+
+// --- Notification API ---
+
+// Get User Notifications
+app.get("/api/notifications", auth, async (req, res) => {
+    try {
+        const notifications = await Notification.find({ recipient: req.user.id })
+            .populate("sender", "name profilePic")
+            .populate("questionId", "content")
+            .sort({ createdAt: -1 })
+            .limit(30);
+        res.json(notifications);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching notifications" });
+    }
+});
+
+// Mark Notification as Read
+app.patch("/api/notifications/:id/read", auth, async (req, res) => {
+    try {
+        await Notification.findByIdAndUpdate(req.params.id, { isRead: true });
+        res.json({ message: "Marked as read" });
+    } catch (error) {
+        res.status(500).json({ message: "Error updating notification" });
+    }
+});
+
+// Mark All as Read
+app.patch("/api/notifications/read-all", auth, async (req, res) => {
+    try {
+        await Notification.updateMany({ recipient: req.user.id, isRead: false }, { isRead: true });
+        res.json({ message: "All marked as read" });
+    } catch (error) {
+        res.status(500).json({ message: "Error updating notifications" });
+    }
+});
+
+// Mark as Browser Notified
+app.patch("/api/notifications/browser-notified", auth, async (req, res) => {
+    try {
+        const { ids } = req.body;
+        await Notification.updateMany({ _id: { $in: ids } }, { isBrowserNotified: true });
+        res.json({ message: "Updated browser notification state" });
+    } catch (error) {
+        res.status(500).json({ message: "Error updating notifications" });
     }
 });
 
@@ -395,6 +454,20 @@ app.post("/api/questions/:id/like", auth, async (req, res) => {
             question.downvotes = question.downvotes.filter(id => id.toString() !== userId);
         }
         await question.save();
+
+        // Create Notification (only if liked)
+        if (question.upvotes.includes(userId) && question.user.toString() !== userId) {
+            const sender = await User.findById(userId);
+            const notification = new Notification({
+                recipient: question.user,
+                sender: userId,
+                type: "upvote",
+                questionId: question._id,
+                message: `${sender.name} upvoted your question: "${question.content.substring(0, 30)}..."`
+            });
+            await notification.save();
+        }
+
         res.json(question);
     } catch (error) {
         res.status(500).json({ message: "Like action failed" });
@@ -448,6 +521,22 @@ app.post("/api/questions/:id/answers", auth, upload.single("media"), async (req,
         });
 
         await newAnswer.save();
+
+        // Create Notification for Question Owner
+        const question = await Question.findById(questionId);
+        if (question && question.user.toString() !== req.user.id) {
+            const sender = await User.findById(req.user.id);
+            const notification = new Notification({
+                recipient: question.user,
+                sender: req.user.id,
+                type: "answer",
+                questionId: question._id,
+                answerId: newAnswer._id,
+                message: `${sender.name} answered your question: "${question.content.substring(0, 40)}..."`
+            });
+            await notification.save();
+        }
+
         res.status(201).json(newAnswer);
     } catch (error) {
         console.error("Answer error:", error);
