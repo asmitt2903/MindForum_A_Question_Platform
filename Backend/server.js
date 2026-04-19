@@ -302,6 +302,31 @@ app.get("/api/user/stats/:id", auth, async (req, res) => {
     }
 });
 
+// Get User Questions
+app.get("/api/user/:id/questions", auth, async (req, res) => {
+    try {
+        const questions = await Question.find({ user: req.params.id })
+            .populate("user", "name profilePic")
+            .sort({ createdAt: -1 });
+        res.json(questions);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching user questions" });
+    }
+});
+
+// Get User Answers
+app.get("/api/user/:id/answers", auth, async (req, res) => {
+    try {
+        const answers = await Answer.find({ user: req.params.id })
+            .populate("user", "name profilePic")
+            .populate("question", "content")
+            .sort({ createdAt: -1 });
+        res.json(answers);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching user answers" });
+    }
+});
+
 // --- Question API ---
 
 app.post("/api/questions", auth, upload.single("media"), async (req, res) => {

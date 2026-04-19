@@ -118,6 +118,10 @@
                                 <span>Following</span>
                             </div>
                             <div class="stat-item">
+                                <strong id="countQuestions">0</strong>
+                                <span>Questions</span>
+                            </div>
+                            <div class="stat-item">
                                 <strong id="countAnswers">0</strong>
                                 <span>Answers</span>
                             </div>
@@ -175,6 +179,64 @@
             </div>
         </aside>
     </main>
+
+    <!-- Ask Question Modal -->
+    <div id="askModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create Post</h2>
+                <span class="close-btn" onclick="closeAskModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <textarea id="questionContent" placeholder="Start your question with 'What', 'How', 'Why', etc."></textarea>
+                
+                <div id="mediaPreviewContainer" class="hidden">
+                    <img id="imagePreview" src="" class="hidden">
+                    <video id="videoPreview" class="hidden" controls></video>
+                    <button class="remove-media" onclick="removeMedia()">Remove</button>
+                </div>
+
+                <div class="media-upload-options">
+                    <label for="mediaInput" class="upload-btn">
+                        <i class="fas fa-image"></i> Add Image/Video
+                    </label>
+                    <input type="file" id="mediaInput" accept="image/*,video/*" hidden onchange="handleMediaSelect(event)">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeAskModal()">Cancel</button>
+                <button class="btn-post" onclick="submitQuestion(this)">Post Question</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Answer Modal -->
+    <div id="answerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="answeringTo">Answering...</h2>
+                <span class="close-btn" onclick="closeAnswerModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <textarea id="answerContent" placeholder="Write your answer..."></textarea>
+                <div id="answerMediaPreviewContainer" class="hidden">
+                    <img id="answerImagePreview" src="" class="hidden">
+                    <video id="answerVideoPreview" class="hidden" controls></video>
+                    <button class="remove-media" onclick="removeAnswerMedia()">Remove</button>
+                </div>
+                <div class="media-upload-options">
+                    <label for="answerMediaInput" class="upload-btn">
+                        <i class="fas fa-image"></i> Add Image/Video
+                    </label>
+                    <input type="file" id="answerMediaInput" accept="image/*,video/*" hidden onchange="handleAnswerMediaSelect(event)">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeAnswerModal()">Cancel</button>
+                <button class="btn-post" onclick="submitAnswer(this)">Post Answer</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Edit Profile Modal -->
     <div id="editProfileModal" class="modal">

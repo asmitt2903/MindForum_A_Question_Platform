@@ -43,45 +43,85 @@ async function fetchActivityStats(userId) {
         const response = await fetch(`/api/user/stats/${userId}`);
         const stats = await response.json();
         
-        document.getElementById("countAnswers").innerText = stats.answers;
-        document.getElementById("countQuestions").innerText = stats.questions;
-        document.getElementById("tabCountAnswers").innerText = stats.answers;
-        document.getElementById("tabCountQuestions").innerText = stats.questions;
+        // Update Header Stats
+        const countAnswersEl = document.getElementById("countAnswers");
+        const countQuestionsEl = document.getElementById("countQuestions");
+        const countFollowersEl = document.getElementById("countFollowers");
+        const countFollowingEl = document.getElementById("countFollowing");
+
+        if (countAnswersEl) countAnswersEl.innerText = stats.answers;
+        if (countQuestionsEl) countQuestionsEl.innerText = stats.questions;
+        
+        // Update Tab Counts
+        const tabCountAnswersEl = document.getElementById("tabCountAnswers");
+        const tabCountQuestionsEl = document.getElementById("tabCountQuestions");
+
+        if (tabCountAnswersEl) tabCountAnswersEl.innerText = stats.answers;
+        if (tabCountQuestionsEl) tabCountQuestionsEl.innerText = stats.questions;
 
         // Display Real Impact Score (Reach)
         const reach = stats.totalReach || 0;
-        document.getElementById("impactScore").innerText = reach > 1000 ? (reach/1000).toFixed(1) + "k" : reach;
+        const impactScoreEl = document.getElementById("impactScore");
+        if (impactScoreEl) {
+            impactScoreEl.innerText = reach > 1000 ? (reach/1000).toFixed(1) + "k" : reach;
+        }
         
-        if (reach > 100) {
-            document.getElementById("impactDescription").innerText = `Your contributions have reached ${reach} people this year!`;
+        const impactDescEl = document.getElementById("impactDescription");
+        if (impactDescEl && reach > 100) {
+            impactDescEl.innerText = `Your contributions have reached ${reach} people this year!`;
         }
     } catch (error) {
         console.error("Stats fetch error:", error);
     }
 }
 
-function renderProfileHeader(user) {
-    document.getElementById("profileLargeImg").src = user.profilePic || "/uploads/default-avatar.png";
-    document.getElementById("profileName").innerText = user.name;
-    document.getElementById("profileTitle").innerText = user.title || "Explorer";
-    document.getElementById("profileBioText").innerText = user.bio || "No bio yet.";
-    document.getElementById("countFollowers").innerText = user.followers.length;
-    document.getElementById("countFollowing").innerText = user.following.length;
+async function renderProfileHeader(user) {
+    const profileLargeImg = document.getElementById("profileLargeImg");
+    const profileName = document.getElementById("profileName");
+    const profileTitle = document.getElementById("profileTitle");
+    const profileBioText = document.getElementById("profileBioText");
+    const countFollowers = document.getElementById("countFollowers");
+    const countFollowing = document.getElementById("countFollowing");
+    const verifiedBadge = document.getElementById("verifiedBadge");
 
-    if (user.isVerified) {
-        document.getElementById("verifiedBadge").style.display = "flex";
+    if (profileLargeImg) profileLargeImg.src = user.profilePic || "/uploads/default-avatar.png";
+    if (profileName) profileName.innerText = user.name;
+    if (profileTitle) profileTitle.innerText = user.title || "Explorer";
+    if (profileBioText) profileBioText.innerText = user.bio || "No bio yet.";
+    if (countFollowers) countFollowers.innerText = user.followers.length;
+    if (countFollowing) countFollowing.innerText = user.following.length;
+
+    if (user.isVerified && verifiedBadge) {
+        verifiedBadge.style.display = "flex";
     }
 
-    // Check if it's the current user's own profile (assuming currentUser is global from home.js)
-    // We'll need to wait for home.js to finish fetchUserData
-    setTimeout(() => {
-        if (typeof currentUser !== 'undefined' && currentUser._id === user._id) {
-            document.getElementById("followBtn").style.display = "none";
-            document.getElementById("editProfileBtn").style.display = "block";
-        } else {
-            updateFollowUI(user);
-        }
-    }, 500);
+    // Wait for currentUser from home.js to be available
+    const loggedInUser = await waitForCurrentUser();
+    
+    if (loggedInUser && loggedInUser._id === user._id) {
+        const followBtn = document.getElementById("followBtn");
+        const editBtn = document.getElementById("editProfileBtn");
+        if (followBtn) followBtn.style.display = "none";
+        if (editBtn) editBtn.style.display = "block";
+    } else {
+        updateFollowUI(user);
+    }
+}
+
+async function waitForCurrentUser() {
+    return new Promise((resolve) => {
+        let attempts = 0;
+        const check = setInterval(() => {
+            if (typeof currentUser !== 'undefined' && currentUser) {
+                clearInterval(check);
+                resolve(currentUser);
+            }
+            if (attempts++ > 50) { // 5 seconds max
+                clearInterval(check);
+                resolve(null);
+            }
+        }, 100);
+    });
 }
 
 function updateFollowUI(user) {
@@ -144,26 +184,61 @@ async function loadTabContent(tab) {
 
     try {
         if (tab === 'answers') {
-            // Need a way to fetch answers for a specific user. 
-            // For now, let's mock or use a broader fetch and filter.
-            const response = await fetch(`/api/questions`);
-            const questions = await response.json();
-            
-            // This is a bit complex as answers are deep in questions in current architecture.
-            // Simplified for now: show questions they answered if possible, or show "no content"
-            feed.innerHTML = `<div class="loading-state"><p>No ${tab} to show yet.</p></div>`;
+            const response = await fetch(`/api/user/${profileUser._id}/answers`);
+            const userAnswers = await response.json();
+            renderUserAnswers(userAnswers, feed);
         } else if (tab === 'questions') {
-            const response = await fetch(`/api/questions`);
-            const questions = await response.json();
-            const userQuestions = questions.filter(q => q.user?._id === profileUser._id);
+            const response = await fetch(`/api/user/${profileUser._id}/questions`);
+            const userQuestions = await response.json();
+            renderUserQuestions(userQuestions, feed);
+        } else if (tab === 'posts') {
+            const [qRes, aRes] = await Promise.all([
+                fetch(`/api/user/${profileUser._id}/questions`),
+                fetch(`/api/user/${profileUser._id}/answers`)
+            ]);
+            const questions = await qRes.json();
+            const answers = await aRes.json();
             
-            if (userQuestions.length === 0) {
-                feed.innerHTML = `<div class="loading-state"><p>No questions posted yet.</p></div>`;
+            // Combine and sort by date
+            const combined = [
+                ...questions.map(q => ({ ...q, type: 'question' })),
+                ...answers.map(a => ({ ...a, type: 'answer' }))
+            ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+            if (combined.length === 0) {
+                feed.innerHTML = `<div class="loading-state"><p>No activity yet.</p></div>`;
             } else {
                 feed.innerHTML = "";
-                userQuestions.forEach(q => {
-                    const card = createQuestionCard(q); // Reused from home.js
-                    feed.appendChild(card);
+                combined.forEach(item => {
+                    if (item.type === 'question') {
+                        feed.appendChild(createQuestionCard(item));
+                    } else {
+                        renderSingleAnswer(item, feed);
+                    }
+                });
+            }
+        } else if (tab === 'followers') {
+            if (!profileUser.followers || profileUser.followers.length === 0) {
+                feed.innerHTML = `<div class="loading-state"><p>No followers yet.</p></div>`;
+            } else {
+                feed.innerHTML = `<div class="followers-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; padding: 16px;"></div>`;
+                const grid = feed.querySelector(".followers-grid");
+                profileUser.followers.forEach(follower => {
+                    const card = document.createElement("div");
+                    card.className = "follower-item-card";
+                    card.style.cssText = "background: var(--bg-card); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s;";
+                    card.onclick = () => window.location.href = `profile.html?id=${follower._id}`;
+                    
+                    card.innerHTML = `
+                        <div class="avatar-container mini">
+                            ${renderAvatarHtml(follower, "mini")}
+                        </div>
+                        <div class="follower-info">
+                            <h4 style="margin: 0; font-size: 14px;">${follower.name}</h4>
+                            <span style="font-size: 11px; color: var(--text-muted);">View Profile</span>
+                        </div>
+                    `;
+                    grid.appendChild(card);
                 });
             }
         } else {
@@ -171,6 +246,64 @@ async function loadTabContent(tab) {
         }
     } catch (error) {
         feed.innerHTML = `<div class="loading-state"><p>Error loading content.</p></div>`;
+        console.error("Tab load error:", error);
+    }
+}
+
+function renderUserAnswers(answers, container) {
+    if (answers.length === 0) {
+        container.innerHTML = `<div class="loading-state"><p>No answers to show yet.</p></div>`;
+    } else {
+        container.innerHTML = "";
+        answers.forEach(a => renderSingleAnswer(a, container));
+    }
+}
+
+function renderSingleAnswer(a, container) {
+    const card = document.createElement("div");
+    card.className = "question-card answer-card-profile animate-fade-in";
+    card.style.borderLeft = "4px solid var(--primary-color)";
+    
+    const mediaHtml = a.mediaUrl ? `
+        <div class="media-container" style="margin-top: 10px;">
+            ${a.mediaType === 'image' ? `<img src="${a.mediaUrl}" onerror="this.parentElement.style.display='none'">` : `<video src="${a.mediaUrl}" controls onerror="this.parentElement.style.display='none'"></video>`}
+        </div>
+    ` : "";
+
+    const questionSnippet = a.question?.content ? 
+        `<div class="answered-to" style="font-size:12px; color:var(--text-muted); margin-bottom:12px; padding:10px; background:rgba(0,0,0,0.03); border-radius:6px; font-style:italic; border-left: 2px solid #ccc;">
+            Answering: "${a.question.content.substring(0, 100)}..."
+        </div>` : '';
+
+    card.innerHTML = `
+        <div class="card-header">
+            <div class="avatar-container mini">
+                ${renderAvatarHtml(a.user, "mini")}
+            </div>
+            <div class="user-info">
+                <h4>${a.user?.name || 'Anonymous'}</h4>
+                <span>Answered • ${new Date(a.createdAt).toLocaleDateString()}</span>
+            </div>
+        </div>
+        <div class="card-content">
+            ${questionSnippet}
+            <div style="font-size: 15px; line-height: 1.6; color: var(--text-main); margin-bottom: 8px;">
+                ${a.content}
+            </div>
+            ${mediaHtml}
+        </div>
+    `;
+    container.appendChild(card);
+}
+
+function renderUserQuestions(questions, container) {
+    if (questions.length === 0) {
+        container.innerHTML = `<div class="loading-state"><p>No questions posted yet.</p></div>`;
+    } else {
+        container.innerHTML = "";
+        questions.forEach(q => {
+            container.appendChild(createQuestionCard(q));
+        });
     }
 }
 

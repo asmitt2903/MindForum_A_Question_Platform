@@ -289,6 +289,43 @@
     color: #fff;
 }
 
+/* Followers Grid & Card */
+.follower-item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: var(--primary-color) !important;
+}
+
+.follower-info h4 {
+    color: var(--text-main);
+    transition: color 0.2s;
+}
+
+.follower-item-card:hover .follower-info h4 {
+    color: var(--primary-color);
+}
+
+/* Answer Card Profile Enhancement */
+.answer-card-profile {
+    transition: transform 0.2s ease;
+}
+
+.answer-card-profile:hover {
+    transform: translateX(4px);
+}
+
+.answered-to {
+    transition: background 0.2s;
+}
+
+[data-theme="dark"] .answered-to {
+    background: rgba(255,255,255,0.05) !important;
+}
+
+[data-theme="dark"] .follower-item-card {
+    background: #242424 !important;
+}
+
 /* Animations */
 .animate-fade-in {
     animation: fadeIn 0.5s ease-out;
