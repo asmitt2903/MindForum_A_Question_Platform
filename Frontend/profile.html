@@ -43,6 +43,26 @@
                             <i class="fas fa-home"></i>
                             <span>Back to Feed</span>
                         </div>
+                        <div class="dropdown-item" onclick="triggerProfileUpload()">
+                            <i class="fas fa-camera"></i>
+                            <span>Upload Profile</span>
+                        </div>
+                        <div class="dropdown-item" onclick="openEditProfileModal()">
+                            <i class="fas fa-user-edit"></i>
+                            <span>Edit Profile</span>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item-settings">
+                            <div class="settings-label">
+                                <i class="fas fa-moon"></i>
+                                <span>Dark Mode</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="themeToggle">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="dropdown-divider"></div>
                         <div class="dropdown-item logout-item" onclick="logout()">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>Logout</span>
@@ -155,6 +175,33 @@
             </div>
         </aside>
     </main>
+
+    <!-- Edit Profile Modal -->
+    <div id="editProfileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Profile</h2>
+                <span class="close-btn" onclick="closeEditProfileModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Bio</label>
+                    <textarea id="editBio" placeholder="Tell us about yourself..." style="width: 100%; height: 100px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; resize: none; font-size: 14px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Fields of Interest (comma-separated)</label>
+                    <input type="text" id="editInterests" placeholder="e.g. AI, Philosophy, Design" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeEditProfileModal()">Cancel</button>
+                <button class="btn-post" onclick="updateProfile()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Profile Input -->
+    <input type="file" id="profileInput" accept="image/*" style="display: none;" onchange="uploadPhoto(event)">
 
     <script src="home.js"></script>
     <script src="profile.js"></script>
