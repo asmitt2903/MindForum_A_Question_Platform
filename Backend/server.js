@@ -45,13 +45,28 @@ if (!fs.existsSync(uploadsPath)) {
 app.use("/uploads", express.static(uploadsPath))
 
 // --- Multer & Cloudinary Config ---
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: "mindforum_media",
-        resource_type: "auto", // Important: Allows both images and videos
-    },
-})
+let storage;
+if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+    storage = new CloudinaryStorage({
+        cloudinary: cloudinary,
+        params: {
+            folder: "mindforum_media",
+            resource_type: "auto", // Important: Allows both images and videos
+        },
+    });
+    console.log("Using Cloudinary for media storage.");
+} else {
+    storage = multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, uploadsPath);
+        },
+        filename: function (req, file, cb) {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+        }
+    });
+    console.log("Using local disk for media storage (Cloudinary credentials not set).");
+}
 const upload = multer({ storage })
 
 
@@ -194,7 +209,7 @@ app.post("/api/user/upload-profile-pic", auth, upload.single("profilePic"), asyn
             return res.status(400).json({ message: "No file uploaded" });
         }
 
-        const profilePicUrl = req.file.path;
+        const profilePicUrl = req.file.path.startsWith("http") ? req.file.path : `/uploads/${req.file.filename}`;
         await User.findByIdAndUpdate(req.user.id, { profilePic: profilePicUrl });
 
         res.json({ message: "Upload successful", profilePic: profilePicUrl });
@@ -296,7 +311,7 @@ app.post("/api/questions", auth, upload.single("media"), async (req, res) => {
         let mediaType = "text";
 
         if (req.file) {
-            mediaUrl = req.file.path;
+            mediaUrl = req.file.path.startsWith("http") ? req.file.path : `/uploads/${req.file.filename}`;
             const ext = path.extname(req.file.originalname).toLowerCase();
             if ([".jpg", ".jpeg", ".png", ".gif", ".webp"].includes(ext)) {
                 mediaType = "image";
@@ -390,7 +405,7 @@ app.post("/api/questions/:id/answers", auth, upload.single("media"), async (req,
         let mediaType = "text";
 
         if (req.file) {
-            mediaUrl = req.file.path;
+            mediaUrl = req.file.path.startsWith("http") ? req.file.path : `/uploads/${req.file.filename}`;
             const ext = path.extname(req.file.originalname).toLowerCase();
             if ([".jpg", ".jpeg", ".png", ".gif", ".webp"].includes(ext)) {
                 mediaType = "image";
