@@ -262,7 +262,15 @@ function createQuestionCard(q) {
     const safeContentForShare = encodeURIComponent(q.content);
     const safeContentForAnswer = q.content.substring(0, 30).replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
+    const isAuthor = currentUser && q.user?._id === currentUser._id;
+    const deleteBtnHtml = isAuthor ? `
+        <button class="delete-post-btn" onclick="deleteQuestion('${q._id}')" title="Delete Post">
+            <i class="fas fa-trash-alt"></i>
+        </button>
+    ` : "";
+
     card.innerHTML = `
+        ${deleteBtnHtml}
         <div class="card-header">
             <div class="avatar-container mini" onclick="window.location.href='profile.html?id=${q.user?._id}'">
                 ${renderAvatarHtml(q.user, "mini")}
@@ -333,6 +341,38 @@ function shareQuestion(content) {
         }).catch(console.error);
     } else {
         alert("Share feature is not supported in this browser. Try copying the URL.");
+    }
+}
+
+async function deleteQuestion(questionId) {
+    if (!confirm("Are you sure you want to delete this post? This action cannot be undone and will delete all associated answers.")) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/questions/${questionId}`, {
+            method: "DELETE"
+        });
+
+        if (response.ok) {
+            // Check if we are on profile page or home page
+            if (typeof initProfile === 'function') {
+                // On profile page
+                const urlParams = new URLSearchParams(window.location.search);
+                const userId = urlParams.get('id');
+                await fetchActivityStats(userId);
+                loadTabContent(currentTab);
+            } else {
+                // On home page
+                loadQuestions();
+            }
+        } else {
+            const data = await response.json();
+            alert(data.message || "Failed to delete question.");
+        }
+    } catch (error) {
+        console.error("Delete error:", error);
+        alert("An error occurred while deleting the question.");
     }
 }
 
@@ -494,6 +534,10 @@ async function uploadPhoto(event) {
             document.getElementById("profileTrigger").innerHTML = renderAvatarHtml(currentUser);
             const mini = document.getElementById("miniProfileContainer");
             if (mini) mini.innerHTML = renderAvatarHtml(currentUser, "mini");
+            
+            // Refresh large profile image if on profile page
+            const large = document.getElementById("profileLargeImgContainer");
+            if (large) large.innerHTML = renderAvatarHtml(currentUser);
             
             alert("Profile picture updated!");
         } else {

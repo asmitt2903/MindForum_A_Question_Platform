@@ -24,6 +24,8 @@
                 <a href="#"><i class="fas fa-question-circle"></i> Questions</a>
                 <a href="#"><i class="fas fa-layer-group"></i> Spaces</a>
                 <a href="#"><i class="fas fa-bookmark"></i> Bookmarks</a>
+                <a href="ai-assistant.html"><i class="fas fa-robot"></i> AI Assistant</a>
+                
             </nav>
 
             <div class="nav-actions">
@@ -82,12 +84,24 @@
         <aside class="sidebar-left">
             <div class="sidebar-section">
                 <h3><i class="fas fa-star brand-icon"></i> Spaces</h3>
+                <p class="subtitle" style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px; padding-left: 12px;">Follow your interests</p>
                 <ul class="space-list">
                     <li onclick="window.location.href='home.html'"><i class="fas fa-home"></i> Home</li>
-                    <li><i class="fas fa-brain"></i> Psychology</li>
-                    <li><i class="fas fa-book-open"></i> Philosophy</li>
-                    <li><i class="fas fa-microchip"></i> Technology</li>
+                    <li onclick="window.location.href='psychology.html'"><i class="fas fa-brain"></i> Psychology</li>
+                    <li onclick="window.location.href='philosophy.html'"><i class="fas fa-book-open"></i> Philosophy</li>
+                    <li onclick="window.location.href='technology.html'"><i class="fas fa-microchip"></i> Technology</li>
+                    <li onclick="window.location.href='science.html'"><i class="fas fa-atom"></i> Science</li>
+                    <li onclick="window.location.href='business.html'"><i class="fas fa-briefcase"></i> Business</li>
                 </ul>
+            </div>
+            <div class="footer-links" style="margin-top: 32px; font-size: 12px; color: var(--text-muted); padding-left: 12px;">
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <i class="far fa-question-circle"></i> <a href="#" style="color: inherit; text-decoration: none;">Help</a>
+                </div>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <i class="fas fa-shield-alt"></i> <a href="#" style="color: inherit; text-decoration: none;">Privacy</a>
+                </div>
+                <p style="margin-top: 16px; opacity: 0.7;">&copy; 2024 MindForum</p>
             </div>
         </aside>
 
@@ -96,22 +110,26 @@
             <!-- Profile Header Card -->
             <div class="profile-header-card animate-fade-in">
                 <div class="profile-header-top">
-                    <div class="profile-photo-wrapper">
-                        <img id="profileLargeImg" src="/uploads/default-avatar.png" alt="Profile">
+                    <div class="profile-photo-wrapper" id="profileLargeImgContainer">
+                        <!-- Loaded by JS (Supports fallback letter avatar) -->
                         <div class="verified-badge" id="verifiedBadge" style="display: none;">
-                            <i class="fas fa-check-circle"></i>
+                            <i class="fas fa-check"></i>
                         </div>
                     </div>
-                    <div class="profile-header-info">
-                        <div class="name-row">
-                            <h1 id="profileName">Loading...</h1>
-                            <div class="header-actions">
-                                <button id="editProfileBtn" class="btn-secondary" style="display: none;">Edit Profile</button>
-                                <button id="followBtn" class="btn-primary">Follow</button>
+                    </div>
+                    
+                    <div class="profile-main-info">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <h1 id="profileName">---</h1>
+                                <p id="profileTitle" class="explorer-title">---</p>
+                            </div>
+                            <div class="profile-actions">
+                                <button class="btn-secondary hidden" id="editProfileBtn" onclick="openEditProfileModal()">Edit Profile</button>
+                                <button class="btn-primary hidden" id="followBtn">Follow</button>
                             </div>
                         </div>
-                        <p class="profile-title" id="profileTitle">MindForum Member</p>
-                        
+
                         <div class="profile-stats-row">
                             <div class="stat-item">
                                 <strong id="countFollowers">0</strong>
@@ -122,18 +140,15 @@
                                 <span>Following</span>
                             </div>
                             <div class="stat-item">
-                                <strong id="countQuestions">0</strong>
-                                <span>Questions</span>
-                            </div>
-                            <div class="stat-item">
                                 <strong id="countAnswers">0</strong>
                                 <span>Answers</span>
                             </div>
                         </div>
+
+                        <div class="profile-header-bio">
+                            <p id="profileBioText">Initializing your story...</p>
+                        </div>
                     </div>
-                </div>
-                <div class="profile-header-bio">
-                    <p id="profileBioText">Initializing your story...</p>
                 </div>
             </div>
 
@@ -143,6 +158,7 @@
                 <button class="tab-link" onclick="switchTab('questions', event)">Questions (<span id="tabCountQuestions">0</span>)</button>
                 <button class="tab-link" onclick="switchTab('posts', event)">Posts</button>
                 <button class="tab-link" onclick="switchTab('followers', event)">Followers</button>
+                <button class="tab-link" onclick="switchTab('following', event)">Following</button>
             </div>
 
             <!-- Tab Content -->
@@ -176,7 +192,10 @@
             <div class="impact-score-card">
                 <div class="impact-header">
                     <span>Impact Score</span>
-                    <h2 id="impactScore">0</h2>
+                    <div class="impact-score-value">
+                        <h2 id="impactScore">0</h2>
+                        <span class="views-label">VIEWS</span>
+                    </div>
                 </div>
                 <p id="impactDescription">Join the conversation to grow your impact.</p>
                 <button class="btn-ask-anything" onclick="window.location.href='home.html'"><i class="fas fa-feather-alt"></i> Ask Anything</button>

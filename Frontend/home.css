@@ -402,6 +402,32 @@ body {
     box-shadow: var(--card-shadow);
     border: 1px solid var(--border-color);
     margin-bottom: 16px;
+    position: relative; /* Anchor for delete button */
+}
+
+.delete-post-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 8px;
+    border-radius: 50%;
+    transition: var(--transition);
+    opacity: 0.4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete-post-btn:hover {
+    background: rgba(185, 43, 39, 0.1);
+    color: var(--primary-color);
+    opacity: 1;
+    transform: scale(1.1);
 }
 
 .card-header {

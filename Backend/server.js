@@ -7,6 +7,8 @@ import User from "./models/userModel.js"
 import Question from "./models/questionModel.js"
 import Answer from "./models/answerModel.js"
 import Notification from "./models/notificationModel.js"
+import AIChat from "./models/aiChatModel.js"
+import { HfInference } from "@huggingface/inference"
 import { fileURLToPath } from "url"
 import multer from "multer"
 import fs from "fs"
@@ -22,6 +24,8 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+const hf = new HfInference(process.env.HF_API_KEY);
+const HF_MODEL = "Qwen/Qwen2.5-7B-Instruct";
 const app = express()
 
 const __filename = fileURLToPath(import.meta.url)
@@ -148,6 +152,10 @@ app.get("/business",auth,(req,res)=>{
     res.sendFile(path.join(frontendPath,"business.html"))
 })
 
+app.get("/ai-assistant",auth,(req,res)=>{
+    res.sendFile(path.join(frontendPath,"ai-assistant.html"))
+})
+
 
 
 app.post("/login", async (req, res) => {
@@ -204,6 +212,76 @@ app.get("/api/user/me", auth, async (req, res) => {
     }
 });
 
+app.get("/api/ai/history", auth, async (req, res) => {
+    try {
+        const chats = await AIChat.find({ user: req.user.id }).sort({ updatedAt: -1 });
+        res.json(chats);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching chat history" });
+    }
+});
+
+app.post("/api/ai/ask", auth, async (req, res) => {
+    try {
+        const { prompt, chatId } = req.body;
+        
+        // Fetch context from the forum
+        const recentQuestions = await Question.find()
+            .populate("user", "name")
+            .sort({ createdAt: -1 })
+            .limit(10);
+            
+        const context = recentQuestions.map(q => 
+            `Space: ${q.spaces}, Question: ${q.content}, Author: ${q.user.name}`
+        ).join("\n");
+
+        const systemPrompt = `You are MindForum AI, an elite Editorial Intelligence designed for the MindForum knowledge-sharing platform.
+        Your purpose is to provide deep, analytical, and highly intellectual responses.
+        Structure your responses to be engaging, professional, and insightful. 
+        Context from recent forum discussions:
+        ${context}`;
+
+        console.log("Generating AI response with Hugging Face (Qwen)...");
+        const response = await hf.chatCompletion({
+            model: HF_MODEL,
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: prompt }
+            ],
+            max_tokens: 800,
+            temperature: 0.7,
+            top_p: 0.95
+        });
+        
+        const responseText = response.choices[0].message.content;
+        console.log("AI response generated.");
+
+        // Update or create chat history
+        let chat;
+        if (chatId) {
+            chat = await AIChat.findById(chatId);
+            chat.messages.push({ role: "user", content: prompt });
+            chat.messages.push({ role: "assistant", content: responseText });
+            await chat.save();
+        } else {
+            chat = new AIChat({
+                user: req.user.id,
+                title: prompt.substring(0, 30) + "...",
+                messages: [
+                    { role: "user", content: prompt },
+                    { role: "assistant", content: responseText }
+                ]
+            });
+            await chat.save();
+        }
+
+        res.json({ response: responseText, chatId: chat._id });
+    } catch (error) {
+        console.error("AI Error:", error);
+        res.status(500).json({ message: "AI Assistant failed to respond" });
+    }
+});
+
 app.post("/api/user/upload-profile-pic", auth, upload.single("profilePic"), async (req, res) => {
     try {
         if (!req.file) {
@@ -243,7 +321,7 @@ app.patch("/api/user/profile", auth, async (req, res) => {
 });
 
 // GET Public Profile
-app.get("/api/user/public/:id", auth, async (req, res) => {
+app.get("/api/user/public/:id", async (req, res) => {
     try {
         const user = await User.findById(req.params.id)
             .select("-password -email")
@@ -299,8 +377,11 @@ app.post("/api/user/follow/:id", auth, async (req, res) => {
 });
 
 // User Stats (Questions & Answers count + Reach)
-app.get("/api/user/stats/:id", auth, async (req, res) => {
+app.get("/api/user/stats/:id", async (req, res) => {
     try {
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
         const qCount = await Question.countDocuments({ user: req.params.id });
         const aCount = await Answer.countDocuments({ user: req.params.id });
         
@@ -308,7 +389,13 @@ app.get("/api/user/stats/:id", auth, async (req, res) => {
         const questions = await Question.find({ user: req.params.id });
         const totalReach = questions.reduce((acc, q) => acc + (q.views || 0), 0);
 
-        res.json({ questions: qCount, answers: aCount, totalReach });
+        res.json({ 
+            questions: qCount, 
+            answers: aCount, 
+            totalReach,
+            followersCount: user.followers.length,
+            followingCount: user.following.length
+        });
     } catch (error) {
         res.status(500).json({ message: "Error fetching stats" });
     }
@@ -362,7 +449,7 @@ app.patch("/api/notifications/browser-notified", auth, async (req, res) => {
 });
 
 // Get User Questions
-app.get("/api/user/:id/questions", auth, async (req, res) => {
+app.get("/api/user/:id/questions", async (req, res) => {
     try {
         const questions = await Question.find({ user: req.params.id })
             .populate("user", "name profilePic")
@@ -374,7 +461,7 @@ app.get("/api/user/:id/questions", auth, async (req, res) => {
 });
 
 // Get User Answers
-app.get("/api/user/:id/answers", auth, async (req, res) => {
+app.get("/api/user/:id/answers", async (req, res) => {
     try {
         const answers = await Answer.find({ user: req.params.id })
             .populate("user", "name profilePic")
@@ -438,6 +525,31 @@ app.get("/api/questions", auth, async (req, res) => {
         res.json(questions);
     } catch (error) {
         res.status(500).json({ message: "Error fetching questions" });
+    }
+});
+
+app.delete("/api/questions/:id", auth, async (req, res) => {
+    try {
+        const question = await Question.findById(req.params.id);
+        if (!question) return res.status(404).json({ message: "Question not found" });
+
+        // Check ownership
+        if (question.user.toString() !== req.user.id) {
+            return res.status(403).json({ message: "You are not authorized to delete this question" });
+        }
+
+        // Delete associated answers
+        await Answer.deleteMany({ question: req.params.id });
+        
+        // Delete notifications related to this question
+        await Notification.deleteMany({ questionId: req.params.id });
+
+        await Question.findByIdAndDelete(req.params.id);
+
+        res.json({ message: "Question deleted successfully" });
+    } catch (error) {
+        console.error("Delete error:", error);
+        res.status(500).json({ message: "Failed to delete question" });
     }
 });
 
@@ -544,6 +656,7 @@ app.post("/api/questions/:id/answers", auth, upload.single("media"), async (req,
     }
 });
 
+// Questions & Answers API
 app.get("/api/questions/:id/answers", auth, async (req, res) => {
     try {
         const answers = await Answer.find({ question: req.params.id })

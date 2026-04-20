@@ -49,34 +49,43 @@ async function fetchActivityStats(userId) {
         const countFollowersEl = document.getElementById("countFollowers");
         const countFollowingEl = document.getElementById("countFollowing");
 
-        if (countAnswersEl) countAnswersEl.innerText = stats.answers;
-        if (countQuestionsEl) countQuestionsEl.innerText = stats.questions;
+        if (countAnswersEl) countAnswersEl.innerText = formatStatNumber(stats.answers);
+        if (countQuestionsEl) countQuestionsEl.innerText = formatStatNumber(stats.questions);
+        if (countFollowersEl) countFollowersEl.innerText = formatStatNumber(stats.followersCount);
+        if (countFollowingEl) countFollowingEl.innerText = formatStatNumber(stats.followingCount);
         
         // Update Tab Counts
         const tabCountAnswersEl = document.getElementById("tabCountAnswers");
         const tabCountQuestionsEl = document.getElementById("tabCountQuestions");
 
-        if (tabCountAnswersEl) tabCountAnswersEl.innerText = stats.answers;
-        if (tabCountQuestionsEl) tabCountQuestionsEl.innerText = stats.questions;
+        if (tabCountAnswersEl) tabCountAnswersEl.innerText = formatStatNumber(stats.answers);
+        if (tabCountQuestionsEl) tabCountQuestionsEl.innerText = formatStatNumber(stats.questions);
 
         // Display Real Impact Score (Reach)
         const reach = stats.totalReach || 0;
         const impactScoreEl = document.getElementById("impactScore");
         if (impactScoreEl) {
-            impactScoreEl.innerText = reach > 1000 ? (reach/1000).toFixed(1) + "k" : reach;
+            impactScoreEl.innerText = formatStatNumber(reach);
         }
         
         const impactDescEl = document.getElementById("impactDescription");
-        if (impactDescEl && reach > 100) {
-            impactDescEl.innerText = `Your contributions have reached ${reach} people this year!`;
+        if (impactDescEl) {
+            const userName = profileUser ? profileUser.name.split(' ')[0] : 'Your';
+            impactDescEl.innerText = `${userName}'s answers have reached ${formatStatNumber(reach)} people this year, helping bridge the gap between academia and public discourse.`;
         }
     } catch (error) {
         console.error("Stats fetch error:", error);
     }
 }
 
+function formatStatNumber(num) {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
+    return num;
+}
+
 async function renderProfileHeader(user) {
-    const profileLargeImg = document.getElementById("profileLargeImg");
+    const container = document.getElementById("profileLargeImgContainer");
     const profileName = document.getElementById("profileName");
     const profileTitle = document.getElementById("profileTitle");
     const profileBioText = document.getElementById("profileBioText");
@@ -84,26 +93,33 @@ async function renderProfileHeader(user) {
     const countFollowing = document.getElementById("countFollowing");
     const verifiedBadge = document.getElementById("verifiedBadge");
 
-    if (profileLargeImg) profileLargeImg.src = user.profilePic || "/uploads/default-avatar.png";
+    if (container) {
+        // Use global renderAvatarHtml from home.js if available
+        container.innerHTML = renderAvatarHtml(user) + (verifiedBadge ? verifiedBadge.outerHTML : '');
+        // Restore reference if needed since we might have overwritten it
+        const newVerifiedBadge = container.querySelector("#verifiedBadge");
+        if (user.isVerified && newVerifiedBadge) {
+            newVerifiedBadge.style.display = "flex";
+        }
+    }
+
     if (profileName) profileName.innerText = user.name;
     if (profileTitle) profileTitle.innerText = user.title || "Explorer";
     if (profileBioText) profileBioText.innerText = user.bio || "No bio yet.";
-    if (countFollowers) countFollowers.innerText = user.followers.length;
-    if (countFollowing) countFollowing.innerText = user.following.length;
-
-    if (user.isVerified && verifiedBadge) {
-        verifiedBadge.style.display = "flex";
-    }
+    if (countFollowers) countFollowers.innerText = formatStatNumber(user.followers ? user.followers.length : 0);
+    if (countFollowing) countFollowing.innerText = formatStatNumber(user.following ? user.following.length : 0);
 
     // Wait for currentUser from home.js to be available
     const loggedInUser = await waitForCurrentUser();
+    const followBtn = document.getElementById("followBtn");
+    const editProfileBtn = document.getElementById("editProfileBtn");
     
     if (loggedInUser && loggedInUser._id === user._id) {
-        const followBtn = document.getElementById("followBtn");
-        const editBtn = document.getElementById("editProfileBtn");
+        if (editProfileBtn) editProfileBtn.style.display = "block";
         if (followBtn) followBtn.style.display = "none";
-        if (editBtn) editBtn.style.display = "block";
     } else {
+        if (editProfileBtn) editProfileBtn.style.display = "none";
+        if (followBtn) followBtn.style.display = "block";
         updateFollowUI(user);
     }
 }
@@ -129,6 +145,8 @@ function updateFollowUI(user) {
     const isFollowing = user.followers.some(f => f._id === currentUser._id || f === currentUser._id);
     const btn = document.getElementById("followBtn");
     
+    if (!btn) return;
+
     if (isFollowing) {
         btn.innerText = "Following";
         btn.classList.add("btn-secondary");
@@ -151,7 +169,7 @@ async function toggleFollow(userId) {
         const result = await response.json();
 
         if (response.ok) {
-            document.getElementById("countFollowers").innerText = result.followersCount;
+            document.getElementById("countFollowers").innerText = formatStatNumber(result.followersCount);
             // Update UI state
             if (result.isFollowing) {
                 btn.innerText = "Following";
@@ -217,24 +235,26 @@ async function loadTabContent(tab) {
                     }
                 });
             }
-        } else if (tab === 'followers') {
-            if (!profileUser.followers || profileUser.followers.length === 0) {
-                feed.innerHTML = `<div class="loading-state"><p>No followers yet.</p></div>`;
+        } else if (tab === 'followers' || tab === 'following') {
+            const list = tab === 'followers' ? profileUser.followers : profileUser.following;
+            
+            if (!list || list.length === 0) {
+                feed.innerHTML = `<div class="loading-state"><p>No ${tab} yet.</p></div>`;
             } else {
                 feed.innerHTML = `<div class="followers-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; padding: 16px;"></div>`;
                 const grid = feed.querySelector(".followers-grid");
-                profileUser.followers.forEach(follower => {
+                list.forEach(person => {
                     const card = document.createElement("div");
                     card.className = "follower-item-card";
                     card.style.cssText = "background: var(--bg-card); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s;";
-                    card.onclick = () => window.location.href = `profile.html?id=${follower._id}`;
+                    card.onclick = () => window.location.href = `profile.html?id=${person._id}`;
                     
                     card.innerHTML = `
                         <div class="avatar-container mini">
-                            ${renderAvatarHtml(follower, "mini")}
+                            ${renderAvatarHtml(person, "mini")}
                         </div>
                         <div class="follower-info">
-                            <h4 style="margin: 0; font-size: 14px;">${follower.name}</h4>
+                            <h4 style="margin: 0; font-size: 14px;">${person.name}</h4>
                             <span style="font-size: 11px; color: var(--text-muted);">View Profile</span>
                         </div>
                     `;
@@ -262,35 +282,40 @@ function renderUserAnswers(answers, container) {
 function renderSingleAnswer(a, container) {
     const card = document.createElement("div");
     card.className = "question-card answer-card-profile animate-fade-in";
-    card.style.borderLeft = "4px solid var(--primary-color)";
     
+    const category = a.question?.tags?.[0] || "General";
     const mediaHtml = a.mediaUrl ? `
-        <div class="media-container" style="margin-top: 10px;">
-            ${a.mediaType === 'image' ? `<img src="${a.mediaUrl}" onerror="this.parentElement.style.display='none'">` : `<video src="${a.mediaUrl}" controls onerror="this.parentElement.style.display='none'"></video>`}
+        <div class="media-container" style="margin-top: 16px; border-radius: 12px; overflow: hidden;">
+            ${a.mediaType === 'image' ? `<img src="${a.mediaUrl}" style="width:100%; display:block;">` : `<video src="${a.mediaUrl}" controls style="width:100%; display:block;"></video>`}
         </div>
     ` : "";
 
-    const questionSnippet = a.question?.content ? 
-        `<div class="answered-to" style="font-size:12px; color:var(--text-muted); margin-bottom:12px; padding:10px; background:rgba(0,0,0,0.03); border-radius:6px; font-style:italic; border-left: 2px solid #ccc;">
-            Answering: "${a.question.content.substring(0, 100)}..."
-        </div>` : '';
+    const questionTitle = a.question?.content ? a.question.content : "Untitled Question";
 
     card.innerHTML = `
-        <div class="card-header">
-            <div class="avatar-container mini">
-                ${renderAvatarHtml(a.user, "mini")}
-            </div>
-            <div class="user-info">
-                <h4>${a.user?.name || 'Anonymous'}</h4>
-                <span>Answered • ${new Date(a.createdAt).toLocaleDateString()}</span>
-            </div>
+        <div class="card-meta">
+            <span class="category-tag">${category.toUpperCase()}</span>
+            <span class="status-date">Answered ${new Date(a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
         </div>
+        <h3>${questionTitle}</h3>
         <div class="card-content">
-            ${questionSnippet}
-            <div style="font-size: 15px; line-height: 1.6; color: var(--text-main); margin-bottom: 8px;">
-                ${a.content}
+            <div class="card-content-text">
+                ${a.content.length > 300 ? a.content.substring(0, 300) + "..." : a.content}
             </div>
             ${mediaHtml}
+        </div>
+        <div class="card-footer-pill">
+            <div class="stat-pill">
+                <i class="fas fa-arrow-up"></i>
+                <span>${formatStatNumber(a.upvotes?.length || 0)}</span>
+            </div>
+            <div class="stat-pill">
+                <i class="far fa-comment"></i>
+                <span>${a.comments?.length || 0}</span>
+            </div>
+            <div class="share-btn-round" title="Share" onclick="shareQuestion('${encodeURIComponent(a.content)}')">
+                <i class="fas fa-share-alt"></i>
+            </div>
         </div>
     `;
     container.appendChild(card);
