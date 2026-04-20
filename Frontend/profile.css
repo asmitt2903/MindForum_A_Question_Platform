@@ -280,4 +280,165 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* ============================================
+   DARK MODE OVERRIDES
+   ============================================ */
 
+[data-theme="dark"] .profile-header-card {
+    background: #1e1e1e;
+    border-color: #333;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+[data-theme="dark"] .profile-photo-wrapper img {
+    border-color: #2d2d2d;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+}
+
+[data-theme="dark"] .verified-badge {
+    border-color: #1e1e1e;
+}
+
+[data-theme="dark"] .profile-main-info h1 {
+    color: #f1f1f1;
+}
+
+[data-theme="dark"] .explorer-title {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .profile-bio {
+    color: #b0b0b0;
+}
+
+[data-theme="dark"] .answer-card-profile {
+    background: #1e1e1e !important;
+    border-color: #333 !important;
+}
+
+[data-theme="dark"] .answer-card-profile h3 {
+    color: #f1f1f1;
+}
+
+[data-theme="dark"] .card-content-text {
+    color: #b0b0b0;
+}
+
+[data-theme="dark"] .category-tag {
+    background: rgba(185, 43, 39, 0.2);
+    color: #e05a57;
+}
+
+[data-theme="dark"] .status-date {
+    color: #8a8a8a;
+}
+
+[data-theme="dark"] .stat-pill {
+    background: #2d2d2d;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .stat-pill:hover {
+    background: #383838;
+}
+
+[data-theme="dark"] .stat-pill i {
+    color: #9a9a9a;
+}
+
+[data-theme="dark"] .share-btn-round {
+    color: #9a9a9a;
+}
+
+[data-theme="dark"] .share-btn-round:hover {
+    background: #2d2d2d;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .interest-tag {
+    background: #2d2d2d;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .card {
+    background: #1e1e1e !important;
+    border-color: #333 !important;
+    color: #f1f1f1;
+}
+
+[data-theme="dark"] .card h3 {
+    color: #a0a0a0;
+}
+
+/* Followers/Following active tag */
+[data-theme="dark"] .profile-tabs button,
+[data-theme="dark"] [class*="tab-btn"] {
+    color: #a0a0a0;
+    border-color: #333;
+}
+
+[data-theme="dark"] .profile-tabs button.active,
+[data-theme="dark"] [class*="tab-btn"].active {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Stats labels under the name */
+[data-theme="dark"] .profile-stats span,
+[data-theme="dark"] .profile-stats a {
+    color: #b0b0b0;
+}
+
+/* Fix loading states */
+[data-theme="dark"] .loading-state {
+    color: #8a8a8a;
+}
+
+/* Right sidebar cards on profile page */
+[data-theme="dark"] .sidebar-card,
+[data-theme="dark"] .credentials-list,
+[data-theme="dark"] .active-spaces-list {
+    background: #1e1e1e;
+    color: #e0e0e0;
+}
+
+/* Credential items */
+[data-theme="dark"] .credential-item {
+    color: #c0c0c0;
+}
+
+[data-theme="dark"] .credential-item h4 {
+    color: #f1f1f1;
+}
+
+[data-theme="dark"] .credential-item p {
+    color: #a0a0a0;
+}
+
+/* Avatar letter fallback — fix white-on-white in dark mode */
+[data-theme="dark"] .avatar-letter {
+    background: var(--primary-color);
+    color: #fff;
+}
+
+/* Profile photo fallback containers */
+[data-theme="dark"] .profile-photo-wrapper .avatar-container,
+[data-theme="dark"] .profile-photo-wrapper .avatar-letter {
+    border: 4px solid #2d2d2d;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+}
+
+/* Profile page body background */
+[data-theme="dark"] body {
+    background-color: #121212;
+}
+
+/* Tab navigation active indicator */
+[data-theme="dark"] .tab-nav-btn {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .tab-nav-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
