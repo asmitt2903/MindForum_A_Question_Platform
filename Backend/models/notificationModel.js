@@ -13,8 +13,12 @@ const notificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ["answer", "upvote", "follow", "mention", "space_invite"],
+        enum: ["answer", "upvote", "follow", "mention", "space_invite", "message"],
         required: true
+    },
+    chatId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Chat"
     },
     questionId: {
         type: mongoose.Schema.Types.ObjectId,

@@ -112,14 +112,20 @@ async function renderProfileHeader(user) {
     // Wait for currentUser from home.js to be available
     const loggedInUser = await waitForCurrentUser();
     const followBtn = document.getElementById("followBtn");
+    const contactBtn = document.getElementById("contactBtn");
     const editProfileBtn = document.getElementById("editProfileBtn");
     
     if (loggedInUser && loggedInUser._id === user._id) {
         if (editProfileBtn) editProfileBtn.style.display = "block";
         if (followBtn) followBtn.style.display = "none";
+        if (contactBtn) contactBtn.style.display = "none";
     } else {
         if (editProfileBtn) editProfileBtn.style.display = "none";
         if (followBtn) followBtn.style.display = "block";
+        if (contactBtn) {
+            contactBtn.style.display = "block";
+            contactBtn.onclick = () => window.location.href = `messages.html?userId=${user._id}`;
+        }
         updateFollowUI(user);
     }
 }

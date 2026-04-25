@@ -41,8 +41,12 @@ function createNotificationCard(notif) {
     card.className = `notif-card ${notif.isRead ? "" : "unread animate-fade-in"}`;
     card.onclick = () => handleNotifClick(notif);
 
-    const iconType = notif.type === 'answer' ? 'answer' : (notif.type === 'upvote' ? 'upvote' : 'follow');
-    const iconClass = notif.type === 'answer' ? 'fa-comment-alt' : (notif.type === 'upvote' ? 'fa-thumbs-up' : 'fa-user-plus');
+    let iconType = notif.type === 'answer' ? 'answer' : (notif.type === 'upvote' ? 'upvote' : 'follow');
+    let iconClass = notif.type === 'answer' ? 'fa-comment-alt' : (notif.type === 'upvote' ? 'fa-thumbs-up' : 'fa-user-plus');
+    if (notif.type === 'message') {
+        iconType = 'message';
+        iconClass = 'fa-envelope';
+    }
     
     const timeAgo = formatTimeAgo(new Date(notif.createdAt));
 
@@ -50,6 +54,15 @@ function createNotificationCard(notif) {
     let snippet = "";
     if (notif.type === 'answer') {
         snippet = `<div class="notif-snippet">"Thinking about your point..."</div>`;
+    } else if (notif.type === 'message') {
+        snippet = `
+            <div id="quickReplyBox-${notif._id}" class="quick-reply-box" style="display:none; margin-top: 12px; margin-bottom: 8px;">
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="quickReplyInput-${notif._id}" placeholder="Type your reply here..." style="flex:1; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 20px; outline:none;" onclick="event.stopPropagation()" onkeypress="if(event.key === 'Enter') { event.stopPropagation(); sendQuickReply('${notif.chatId || notif.chatId?._id}', '${notif._id}'); }">
+                    <button style="background: var(--primary-color); color: white; border: none; padding: 0 16px; border-radius: 20px; cursor: pointer; font-weight: bold;" onclick="event.stopPropagation(); sendQuickReply('${notif.chatId || notif.chatId?._id}', '${notif._id}')">Send</button>
+                </div>
+            </div>
+        `;
     }
 
     card.innerHTML = `
@@ -85,6 +98,11 @@ function getActionButtons(notif) {
         return `<button class="btn-notif primary">Follow Back</button>`;
     } else if (notif.type === 'upvote') {
         return `<button class="btn-notif outline">View Post</button>`;
+    } else if (notif.type === 'message') {
+        return `
+            <button class="btn-notif primary" onclick="event.stopPropagation(); toggleQuickReply('${notif._id}')">Quick Reply</button>
+            <button class="btn-notif outline" onclick="event.stopPropagation(); window.location.href='messages.html?userId=${notif.sender._id || notif.sender}'">Open Chat</button>
+        `;
     }
     return '';
 }
@@ -151,3 +169,53 @@ function formatTimeAgo(date) {
     if (interval > 1) return Math.floor(interval) + "M AGO";
     return "JUST NOW";
 }
+
+function toggleQuickReply(notifId) {
+    const box = document.getElementById(`quickReplyBox-${notifId}`);
+    if (box) {
+        box.style.display = box.style.display === "none" ? "block" : "none";
+        if (box.style.display === "block") {
+            document.getElementById(`quickReplyInput-${notifId}`).focus();
+        }
+    }
+}
+
+async function sendQuickReply(chatId, notifId) {
+    const input = document.getElementById(`quickReplyInput-${notifId}`);
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.disabled = true;
+    try {
+        const res = await fetch(`/api/chat/${chatId}/messages/reply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        });
+
+        if (res.ok) {
+            input.value = "";
+            const box = document.getElementById(`quickReplyBox-${notifId}`);
+            box.innerHTML = `<span style="color: #2e7d32; font-weight: 500; font-size: 13px;"><i class="fas fa-check-circle"></i> Message Sent!</span>`;
+            setTimeout(() => {
+                box.style.display = "none";
+            }, 3000);
+            
+            // Mark notification as read
+            const notif = allNotifications.find(n => n._id === notifId);
+            if (notif && !notif.isRead) {
+                await fetch(`/api/notifications/${notifId}/read`, { method: "PATCH" });
+                notif.isRead = true;
+                const card = box.closest('.notif-card');
+                if (card) card.classList.remove('unread');
+            }
+        } else {
+            alert("Failed to send reply. Please try again.");
+            input.disabled = false;
+        }
+    } catch (err) {
+        console.error("Quick reply error:", err);
+        input.disabled = false;
+    }
+}
+

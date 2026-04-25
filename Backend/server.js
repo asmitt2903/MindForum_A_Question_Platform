@@ -8,6 +8,10 @@ import Question from "./models/questionModel.js"
 import Answer from "./models/answerModel.js"
 import Notification from "./models/notificationModel.js"
 import AIChat from "./models/aiChatModel.js"
+import Chat from "./models/chatModel.js"
+import Message from "./models/messageModel.js"
+import http from "http"
+import { Server } from "socket.io"
 import { HfInference } from "@huggingface/inference"
 import { fileURLToPath } from "url"
 import multer from "multer"
@@ -27,6 +31,8 @@ cloudinary.config({
 const hf = new HfInference(process.env.HF_API_KEY);
 const HF_MODEL = "Qwen/Qwen2.5-7B-Instruct";
 const app = express()
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -154,6 +160,10 @@ app.get("/business",auth,(req,res)=>{
 
 app.get("/ai-assistant",auth,(req,res)=>{
     res.sendFile(path.join(frontendPath,"ai-assistant.html"))
+})
+
+app.get("/messages",auth,(req,res)=>{
+    res.sendFile(path.join(frontendPath,"messages.html"))
 })
 
 
@@ -668,9 +678,141 @@ app.get("/api/questions/:id/answers", auth, async (req, res) => {
     }
 });
 
+// --- Direct Messaging API ---
+app.post("/api/chat/initiate", auth, async (req, res) => {
+    try {
+        const { recipientId } = req.body;
+        const currentUserId = req.user.id;
+
+        let chat = await Chat.findOne({
+            participants: { $all: [currentUserId, recipientId] }
+        });
+
+        if (!chat) {
+            chat = new Chat({ participants: [currentUserId, recipientId] });
+            await chat.save();
+        }
+
+        res.json(chat);
+    } catch (error) {
+        console.error("Initiate chat error:", error);
+        res.status(500).json({ message: "Failed to initiate chat" });
+    }
+});
+
+app.get("/api/chat", auth, async (req, res) => {
+    try {
+        const chats = await Chat.find({ participants: { $in: [req.user.id] } })
+            .populate("participants", "name profilePic title")
+            .populate("lastMessage")
+            .sort({ updatedAt: -1 });
+        res.json(chats);
+    } catch (error) {
+        res.status(500).json({ message: "Failed to load chats" });
+    }
+});
+
+app.get("/api/chat/:chatId/messages", auth, async (req, res) => {
+    try {
+        const messages = await Message.find({ chatId: req.params.chatId })
+            .populate("sender", "name profilePic")
+            .sort({ createdAt: 1 });
+        res.json(messages);
+    } catch (error) {
+        res.status(500).json({ message: "Failed to load messages" });
+    }
+});
+
+// Quick Reply POST endpoint
+app.post("/api/chat/:chatId/messages/reply", auth, async (req, res) => {
+    try {
+        const { text } = req.body;
+        const chatId = req.params.chatId;
+        const senderId = req.user.id;
+
+        const newMessage = new Message({
+            chatId,
+            sender: senderId,
+            text
+        });
+        await newMessage.save();
+
+        const chat = await Chat.findByIdAndUpdate(chatId, { 
+            lastMessage: newMessage._id 
+        }, { 
+            timestamps: { updatedAt: true } 
+        });
+
+        const recipientId = chat.participants.find(p => p.toString() !== senderId.toString());
+        if (recipientId) {
+            const notification = new Notification({
+                recipient: recipientId,
+                sender: senderId,
+                type: "message",
+                chatId: chatId,
+                message: `New message: "${text.substring(0, 30)}${text.length > 30 ? '...' : ''}"`
+            });
+            await notification.save();
+        }
+
+        await newMessage.populate("sender", "name profilePic");
+        io.to(chatId).emit("receiveMessage", newMessage);
+        
+        res.json(newMessage);
+    } catch (error) {
+        console.error("Reply error:", error);
+        res.status(500).json({ message: "Failed to send reply" });
+    }
+});
+
+// --- Socket.IO Chat Setup ---
+io.on("connection", (socket) => {
+    socket.on("joinChat", (chatId) => {
+        socket.join(chatId);
+    });
+
+    socket.on("sendMessage", async (data) => {
+        try {
+            const { chatId, senderId, text } = data;
+            
+            const newMessage = new Message({
+                chatId,
+                sender: senderId,
+                text
+            });
+            await newMessage.save();
+
+            const chat = await Chat.findByIdAndUpdate(chatId, { 
+                lastMessage: newMessage._id 
+            }, { 
+                timestamps: { updatedAt: true } 
+            });
+
+            // Notification
+            const recipientId = chat.participants.find(p => p.toString() !== senderId.toString());
+            if (recipientId) {
+                const notification = new Notification({
+                    recipient: recipientId,
+                    sender: senderId,
+                    type: "message",
+                    chatId: chatId,
+                    message: `New message: "${text.substring(0, 30)}${text.length > 30 ? '...' : ''}"`
+                });
+                await notification.save();
+            }
+
+            await newMessage.populate("sender", "name profilePic");
+            io.to(chatId).emit("receiveMessage", newMessage);
+        } catch (error) {
+            console.error("Socket error:", error);
+        }
+    });
+});
+
+
 // ✅ Correct for Render
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

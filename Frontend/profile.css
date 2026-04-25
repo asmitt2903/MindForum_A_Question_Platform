@@ -166,6 +166,58 @@
     background: #f8f8f8;
 }
 
+/* Interactive Profile Buttons */
+.profile-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.profile-actions button {
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.profile-actions .btn-primary {
+    background: linear-gradient(135deg, var(--premium-red) 0%, #ff4b4b 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(185, 43, 39, 0.3);
+}
+
+.profile-actions .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(185, 43, 39, 0.4);
+}
+
+.profile-actions .btn-primary:active {
+    transform: translateY(1px);
+}
+
+.profile-actions .btn-secondary {
+    background: #f1f2f5;
+    color: var(--text-main);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.profile-actions .btn-secondary:hover {
+    background: #e4e6eb;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.profile-actions .btn-secondary:active {
+    transform: translateY(1px);
+}
+
 /* Activity Card: Mockup Match */
 .answer-card-profile {
     padding: 32px !important;
@@ -309,6 +361,17 @@
 
 [data-theme="dark"] .profile-bio {
     color: #b0b0b0;
+}
+
+[data-theme="dark"] .profile-actions .btn-secondary {
+    background: #2d2d2d;
+    color: #e0e0e0;
+    border-color: #444;
+}
+
+[data-theme="dark"] .profile-actions .btn-secondary:hover {
+    background: #383838;
+    color: #f1f1f1;
 }
 
 [data-theme="dark"] .answer-card-profile {
