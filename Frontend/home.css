@@ -1079,3 +1079,63 @@ input:checked + .slider:before {
     border: 1px solid var(--border-color);
     font-weight: 500;
 }
+
+/* =========================================
+   RESPONSIVE DESIGN (MOBILE / TABLET)
+   ========================================= */
+@media (max-width: 992px) {
+    .main-layout {
+        grid-template-columns: 1fr;
+        padding: 0 10px;
+    }
+    .sidebar-left {
+        position: static;
+        margin-bottom: 20px;
+        /* Optionally hide to focus on content: */
+        /* display: none; */
+    }
+    .sidebar-right {
+        margin-top: 20px;
+    }
+    .nav-container {
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 10px 15px;
+    }
+    .search-bar {
+        order: 3;
+        width: 100%;
+        margin-top: 5px;
+        flex: none;
+    }
+    .nav-links {
+        order: 4;
+        width: 100%;
+        justify-content: space-around;
+        margin-top: 10px;
+        overflow-x: auto;
+    }
+    .nav-actions {
+        order: 2;
+        margin-left: auto;
+    }
+}
+
+@media (max-width: 600px) {
+    .modal-content {
+        width: 95%;
+        margin: 10px auto;
+    }
+    .card-stats {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .input-actions {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    .nav-links span {
+        display: none; /* Hide text, keep icons if applicable */
+    }
+}
